@@ -1,0 +1,1157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#4E9F30">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<title>IgniteAI Banking</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap">
+<style>
+/* Layout: one phone, two panes on a horizontal track. Left = the app as designed; right = Co-op AI.
+   Swipe, tap the sparkle, or press "/" to move between them. A short brief sits beside the phone on wide screens. */
+:root {
+  --font: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Bank greens, taken from the Figma Home header and banner */
+  --g-top: #79C744; --g-mid: #4E9F30; --g-deep: #1F6B2B; --g-ink: #1F7A2E; --g-wash: #EEF6EA;
+  /* App neutrals, tinted toward green */
+  --ink: #111412; --muted: #6A716B; --line: #E5E8E4; --bg: #F2F3F1; --card: #FFFFFF; --debit: #D63C3C;
+  /* AI space */
+  --ai-bg: #06110A; --ai-bg2: #0B1D12; --ai-ink: #EAF3EC; --ai-muted: #8DA394; --ai-line: rgba(234,243,236,.10);
+  --ai-card: #0F2218; --mint: #A3E68F;
+  --stage: #E6EAE4; --stage-ink: #1A1F1B;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; font-family: var(--font); background: var(--stage); color: var(--stage-ink);
+  -webkit-font-smoothing: antialiased; font-optical-sizing: auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  overflow: hidden;
+}
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ---------- Stage ---------- */
+.stage { height: 100%; display: grid; grid-template-columns: minmax(0, 340px) auto; gap: 64px; align-items: center; justify-content: center; padding-block: 24px; }
+.brief { display: grid; gap: 20px; min-width: 0; }
+.brief h1 { font-size: 44px; line-height: 1.02; letter-spacing: -0.035em; margin: 0; font-weight: 650; text-wrap: balance; }
+.brief h1 span { color: var(--g-ink); }
+.brief p { margin: 0; font-size: 15px; line-height: 1.55; color: #49514B; }
+.brief h2 { margin: 0 0 8px; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #6A716B; font-weight: 600; }
+.gestures { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; font-size: 14px; }
+.gestures li { display: flex; gap: 10px; align-items: center; }
+.kbd { display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 7px; border-radius: 8px; background: #fff; border: 1px solid #D5DAD3; font-size: 12px; font-weight: 600; }
+.tries { display: grid; gap: 6px; }
+.try { text-align: left; padding: 10px 12px; border-radius: 12px; background: #fff; border: 1px solid #DCE1DA; font-size: 14px; line-height: 1.35; transition: transform .15s, border-color .15s; }
+.try:hover { border-color: var(--g-ink); transform: translateX(2px); }
+.foot { font-size: 12px !important; color: #7A817B !important; }
+
+/* ---------- Device ---------- */
+.device {
+  --h: min(874px, calc(100dvh - 48px)); --w: calc(var(--h) * 0.46);
+  width: var(--w); height: var(--h); border-radius: 56px; padding: 11px; background: #0C0E0D;
+  box-shadow: 0 0 0 1px #2A2D2B inset, 0 40px 80px -30px rgba(20,40,25,.45), 0 10px 30px -10px rgba(0,0,0,.3);
+  position: relative;
+}
+.screen { position: relative; width: 100%; height: 100%; border-radius: 46px; overflow: hidden; background: var(--bg); isolation: isolate; }
+.island { position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 120px; height: 35px; background: #000; border-radius: 20px; z-index: 50; }
+.statusbar { position: absolute; inset: 0 0 auto; height: 54px; display: flex; align-items: center; justify-content: space-between; padding: 6px 30px 0 40px; z-index: 40; font-weight: 600; font-size: 16px; color: #fff; pointer-events: none; transition: color .25s; }
+.statusbar svg { display: block; }
+.homebar { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; border-radius: 3px; background: #111; z-index: 40; pointer-events: none; transition: background .25s; }
+.screen.is-ai .homebar { background: rgba(234,243,236,.85); }
+
+.track { position: absolute; inset: 0; width: 200%; display: flex; touch-action: pan-y; will-change: transform; }
+.track.snap { transition: transform .48s cubic-bezier(.2,.9,.25,1); }
+.pane { position: relative; width: 50%; height: 100%; overflow: hidden; }
+
+/* ---------- App pane ---------- */
+.app { background: var(--bg); color: var(--ink); }
+.app-scroll { position: absolute; inset: 0; overflow-y: auto; padding-bottom: 120px; scrollbar-width: none; }
+.app-scroll::-webkit-scrollbar { display: none; }
+.app-head {
+  position: relative; padding: 58px 18px 22px; color: #fff; border-radius: 0 0 30px 30px; overflow: hidden;
+  background: radial-gradient(120% 90% at 50% 120%, rgba(255,255,255,.10), transparent 60%), linear-gradient(180deg, var(--g-top) 0%, var(--g-mid) 62%, #3E8E2A 100%);
+}
+.app-head::before { content: ""; position: absolute; inset: -40% -20% auto; height: 140%; background: repeating-radial-gradient(circle at 50% 70%, rgba(255,255,255,.07) 0 1px, transparent 1px 46px); pointer-events: none; }
+.head-row { position: relative; display: flex; align-items: center; justify-content: space-between; }
+.me { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-weight: 650; font-size: 14px; color: var(--g-deep); background: #D9F2B8; box-shadow: 0 0 0 2px rgba(255,255,255,.6); }
+.handle { display: flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 20px; background: rgba(0,0,0,.18); font-size: 15px; font-weight: 550; }
+.icon-btn { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.5); }
+.bal { position: relative; text-align: center; margin-top: 22px; }
+.bal small { display: flex; gap: 8px; align-items: center; justify-content: center; font-size: 15px; opacity: .9; }
+.bal .big { font-size: 46px; font-weight: 650; letter-spacing: -0.04em; line-height: 1.1; margin-top: 4px; }
+.bal .big sub { font-size: 24px; vertical-align: baseline; bottom: 0; letter-spacing: -0.02em; opacity: .85; }
+.bal .total { font-size: 13px; opacity: .85; margin-top: 2px; }
+.head-cta { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
+.head-cta button { height: 52px; border-radius: 14px; font-size: 16px; font-weight: 550; }
+.btn-dark { background: #0E1210; color: #fff; }
+.btn-light { background: #fff; color: var(--ink); }
+
+.sec { padding: 22px 18px 0; }
+.sec-h { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+.sec-h h3 { margin: 0; font-size: 16px; font-weight: 650; letter-spacing: -0.01em; }
+.sec-h a, .sec-h button { font-size: 13px; color: var(--g-ink); font-weight: 600; text-decoration: none; }
+.accts { display: flex; gap: 10px; overflow-x: auto; margin: 0 -18px; padding: 2px 18px 6px; scrollbar-width: none; scroll-snap-type: x mandatory; }
+.accts::-webkit-scrollbar { display: none; }
+.acct { flex: 0 0 150px; scroll-snap-align: start; background: var(--card); border-radius: 18px; padding: 14px; display: grid; gap: 2px; border: 1px solid var(--line); transition: box-shadow .4s, border-color .4s; }
+.acct .t { font-size: 13px; color: var(--muted); }
+.acct .v { font-size: 17px; font-weight: 650; letter-spacing: -0.02em; margin-top: 10px; }
+.acct .s { font-size: 12px; color: var(--muted); }
+.acct.mmf { background: linear-gradient(160deg, #F4FBEF, #fff 60%); }
+.acct.mmf .s { color: var(--g-ink); font-weight: 550; }
+.acct.flash { border-color: var(--g-ink); box-shadow: 0 0 0 4px rgba(31,122,46,.12); }
+.tx-list { background: var(--card); border-radius: 20px; border: 1px solid var(--line); padding: 4px 14px; }
+.tx { display: grid; grid-template-columns: 38px 1fr auto; gap: 12px; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--line); transition: background .6s; }
+.tx:last-child { border-bottom: 0; }
+.tx .av { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 650; color: #fff; }
+.tx .n { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx .d { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.tx .a { text-align: right; font-size: 14px; font-weight: 650; color: var(--debit); }
+.tx .a.cr { color: var(--g-ink); }
+.tx .c { font-size: 11px; color: var(--muted); text-align: right; margin-top: 1px; }
+.tx.new { animation: txIn 1.6s ease; }
+@keyframes txIn { 0% { background: #DFF2D3; } 100% { background: transparent; } }
+
+.tabbar { position: absolute; left: 14px; right: 14px; bottom: 26px; display: flex; gap: 10px; z-index: 5; }
+.tabs { flex: 1; height: 60px; border-radius: 30px; background: #121614; display: flex; align-items: center; justify-content: space-around; box-shadow: 0 10px 30px -10px rgba(0,0,0,.35); }
+.tabs button { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; color: rgba(255,255,255,.6); }
+.tabs button.on { background: rgba(255,255,255,.95); color: #121614; }
+.spark-btn { position: relative; width: 60px; height: 60px; border-radius: 50%; background: #121614; display: grid; place-items: center; color: #fff; box-shadow: 0 10px 30px -10px rgba(0,0,0,.35); }
+.spark-btn::before { content: ""; position: absolute; inset: -2px; border-radius: 50%; padding: 2px; background: conic-gradient(from var(--ang, 0deg), #A3E68F, #2E7D32, #79C744, #A3E68F); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: spin 4s linear infinite; }
+@property --ang { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+@keyframes spin { to { --ang: 360deg; } }
+
+.edge { position: absolute; right: 0; top: 46%; z-index: 6; display: flex; align-items: center; gap: 4px; padding: 10px 6px 10px 10px; border-radius: 14px 0 0 14px; background: #121614; color: var(--mint); font-size: 11px; font-weight: 650; letter-spacing: .06em; writing-mode: vertical-rl; box-shadow: -6px 6px 20px -8px rgba(0,0,0,.4); animation: nudge 3.2s ease-in-out infinite; }
+@keyframes nudge { 0%, 80%, 100% { transform: translateX(0); } 88% { transform: translateX(-6px); } }
+
+.hint { position: absolute; left: 50%; bottom: 100px; transform: translate(-50%, 12px); opacity: 0; z-index: 7; background: #121614; color: #fff; font-size: 13px; padding: 10px 14px; border-radius: 14px; white-space: nowrap; transition: opacity .35s, transform .35s; pointer-events: none; }
+.hint.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* App bottom sheet (handoff from AI) */
+.sheet-wrap { position: absolute; inset: 0; z-index: 30; background: rgba(10,16,12,.38); opacity: 0; pointer-events: none; transition: opacity .3s; }
+.sheet-wrap.open { opacity: 1; pointer-events: auto; }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--bg); border-radius: 30px 30px 0 0; padding: 10px 14px 34px; transform: translateY(100%); transition: transform .45s cubic-bezier(.2,.9,.25,1); max-height: 88%; overflow-y: auto; }
+.sheet-wrap.open .sheet { transform: none; }
+.grab { width: 40px; height: 5px; border-radius: 3px; background: #CDD2CB; margin: 0 auto 10px; }
+.sheet-h { display: flex; justify-content: space-between; align-items: center; padding: 4px 4px 12px; }
+.sheet-h b { font-size: 18px; letter-spacing: -0.01em; }
+.sheet-h small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+.x { width: 32px; height: 32px; border-radius: 50%; background: #E3E6E2; display: grid; place-items: center; }
+
+/* ---------- AI pane ---------- */
+.ai { color: var(--ai-ink); background: linear-gradient(180deg, var(--ai-bg) 0%, var(--ai-bg2) 100%); }
+.aurora { position: absolute; inset: -20% -30% auto; height: 60%; pointer-events: none; filter: blur(40px); opacity: .9; }
+.aurora i { position: absolute; border-radius: 50%; }
+.aurora i:nth-child(1) { width: 60%; height: 70%; left: 10%; top: 10%; background: radial-gradient(circle, rgba(121,199,68,.55), transparent 65%); animation: drift1 14s ease-in-out infinite alternate; }
+.aurora i:nth-child(2) { width: 55%; height: 60%; right: 5%; top: 0; background: radial-gradient(circle, rgba(31,107,43,.75), transparent 65%); animation: drift2 18s ease-in-out infinite alternate; }
+.aurora i:nth-child(3) { width: 40%; height: 50%; left: 40%; top: 30%; background: radial-gradient(circle, rgba(163,230,143,.30), transparent 65%); animation: drift1 11s ease-in-out infinite alternate-reverse; }
+@keyframes drift1 { to { transform: translate(18%, 10%) scale(1.15); } }
+@keyframes drift2 { to { transform: translate(-20%, 14%) scale(.9); } }
+.ai-head { position: absolute; inset: 0 0 auto; z-index: 3; padding: 56px 16px 12px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; background: linear-gradient(var(--ai-bg) 60%, transparent); }
+.pill-btn { justify-self: start; display: flex; align-items: center; gap: 4px; height: 36px; padding: 0 12px 0 8px; border-radius: 18px; background: rgba(234,243,236,.08); border: 1px solid var(--ai-line); font-size: 13px; font-weight: 550; }
+.ai-title { display: flex; align-items: center; gap: 7px; font-weight: 650; font-size: 16px; letter-spacing: -0.01em; }
+.ai-title svg { color: var(--mint); }
+.dots { justify-self: end; display: flex; gap: 5px; }
+.dots i { width: 6px; height: 6px; border-radius: 3px; background: rgba(234,243,236,.25); transition: width .3s, background .3s; }
+.dots i.on { width: 16px; background: var(--mint); }
+.reset { justify-self: end; font-size: 12px; color: var(--ai-muted); padding: 6px 4px; }
+.ai-head .right { justify-self: end; display: flex; align-items: center; gap: 8px; }
+
+.chat { position: absolute; inset: 0; overflow-y: auto; padding: 112px 16px 150px; scrollbar-width: none; display: flex; flex-direction: column; gap: 14px; }
+.chat::-webkit-scrollbar { display: none; }
+.welcome { display: grid; gap: 18px; padding-top: 18px; }
+.welcome h2 { margin: 0; font-size: 34px; line-height: 1.05; letter-spacing: -0.04em; font-weight: 650; text-wrap: balance; }
+.welcome h2 em { font-style: normal; background: linear-gradient(90deg, #E8F6DF, var(--mint) 60%, #79C744); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.welcome p { margin: -8px 0 0; color: var(--ai-muted); font-size: 15px; line-height: 1.5; }
+.sugs { display: grid; gap: 8px; }
+.sug { display: grid; grid-template-columns: 32px 1fr; gap: 12px; align-items: center; text-align: left; padding: 12px; border-radius: 16px; background: rgba(234,243,236,.05); border: 1px solid var(--ai-line); font-size: 14px; line-height: 1.35; transition: background .2s, transform .2s; }
+.sug:hover { background: rgba(234,243,236,.09); }
+.sug:active { transform: scale(.985); }
+.sug .ic { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: rgba(163,230,143,.12); color: var(--mint); }
+.sug small { display: block; color: var(--ai-muted); font-size: 12px; margin-top: 2px; }
+
+.msg-u { align-self: flex-end; max-width: 82%; background: #EAF3EC; color: #0A1A10; padding: 10px 14px; border-radius: 20px 20px 6px 20px; font-size: 15px; line-height: 1.4; animation: popIn .3s cubic-bezier(.2,.9,.25,1.2); overflow-wrap: anywhere; }
+.msg-u mark { background: transparent; color: inherit; border-bottom: 2px solid #4E9F30; font-weight: 600; }
+.msg-u mark.who { border-color: #2563C9; }
+.msg-a { align-self: stretch; display: grid; gap: 10px; animation: popIn .35s ease; }
+.msg-a .t { display: grid; grid-template-columns: 22px 1fr; gap: 10px; font-size: 15px; line-height: 1.5; color: var(--ai-ink); }
+.msg-a .t svg { color: var(--mint); margin-top: 3px; }
+.msg-a .t p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+@keyframes popIn { from { opacity: 0; transform: translateY(8px) scale(.98); } }
+.typing { display: inline-flex; gap: 4px; padding-top: 8px; }
+.typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--ai-muted); animation: blink 1.2s infinite; }
+.typing i:nth-child(2) { animation-delay: .15s; } .typing i:nth-child(3) { animation-delay: .3s; }
+@keyframes blink { 0%, 60%, 100% { opacity: .25; } 30% { opacity: 1; } }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; padding-left: 32px; }
+.chip { padding: 8px 12px; border-radius: 16px; font-size: 13px; font-weight: 550; background: rgba(234,243,236,.07); border: 1px solid var(--ai-line); }
+.chip:hover { background: rgba(234,243,236,.12); }
+
+.composer { position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; padding: 14px 12px 28px; background: linear-gradient(transparent, var(--ai-bg2) 30%); }
+.compose-box { display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 16px; border-radius: 26px; background: rgba(234,243,236,.08); border: 1px solid rgba(234,243,236,.14); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+.compose-box input { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; color: var(--ai-ink); font: 400 16px/1.3 var(--font); padding: 10px 0; }
+.compose-box input::placeholder { color: var(--ai-muted); }
+.send-btn { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--mint); color: #08160C; transition: transform .15s, opacity .2s; }
+.send-btn:disabled { opacity: .35; cursor: default; }
+.send-btn:not(:disabled):active { transform: scale(.92); }
+.mentions { position: absolute; left: 12px; right: 12px; bottom: 82px; background: #132A1D; border: 1px solid var(--ai-line); border-radius: 16px; padding: 6px; display: grid; gap: 2px; box-shadow: 0 -10px 30px -10px rgba(0,0,0,.6); }
+.mention { display: grid; grid-template-columns: 30px 1fr; gap: 10px; align-items: center; padding: 8px; border-radius: 10px; text-align: left; font-size: 14px; }
+.mention:hover, .mention.sel { background: rgba(234,243,236,.08); }
+.mention small { color: var(--ai-muted); font-size: 12px; }
+.mav { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 650; color: #fff; }
+
+/* ---------- Payment card (themed by container) ---------- */
+.ai { --c-bg: var(--ai-card); --c-ink: var(--ai-ink); --c-muted: var(--ai-muted); --c-line: rgba(234,243,236,.09); --c-soft: rgba(234,243,236,.06); --c-good: var(--mint); --c-warn: #F4B860; --c-track: rgba(234,243,236,.10); --c-fill-a: #79C744; --c-fill-b: #A3E68F; --c-on-fill: #08160C; }
+.sheet { --c-bg: #fff; --c-ink: var(--ink); --c-muted: var(--muted); --c-line: var(--line); --c-soft: #F4F6F3; --c-good: var(--g-ink); --c-warn: #B4620B; --c-track: #E3E7E2; --c-fill-a: #2E7D32; --c-fill-b: #4E9F30; --c-on-fill: #fff; }
+.pcard { margin-left: 32px; background: var(--c-bg); color: var(--c-ink); border: 1px solid var(--c-line); border-radius: 24px; padding: 16px; display: grid; gap: 14px; box-shadow: 0 20px 40px -24px rgba(0,0,0,.6); animation: cardIn .45s cubic-bezier(.2,.9,.25,1.1); }
+.sheet .pcard { margin-left: 0; box-shadow: none; animation: none; }
+@keyframes cardIn { from { opacity: 0; transform: translateY(14px) scale(.97); } }
+.pc-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.pc-kind { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--c-muted); }
+.pc-kind span { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: var(--c-soft); color: var(--c-good); }
+.tag { font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 12px; background: var(--c-soft); color: var(--c-good); white-space: nowrap; }
+.pc-amt { text-align: left; font-size: 40px; font-weight: 650; letter-spacing: -0.045em; line-height: 1; display: flex; align-items: baseline; gap: 6px; }
+.pc-amt small { font-size: 18px; letter-spacing: -0.01em; color: var(--c-muted); font-weight: 550; }
+.pc-amt .edit { font-size: 12px; font-weight: 550; color: var(--c-muted); letter-spacing: 0; margin-left: auto; align-self: center; padding: 4px 8px; border-radius: 8px; background: var(--c-soft); }
+.pc-amt input { width: 100%; background: var(--c-soft); border: 1px solid var(--c-line); border-radius: 12px; padding: 6px 10px; color: var(--c-ink); font: 650 32px/1.1 var(--font); letter-spacing: -0.04em; }
+.to { display: grid; grid-template-columns: 42px 1fr; gap: 12px; align-items: center; padding: 10px; border-radius: 16px; background: var(--c-soft); }
+.to .av { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; font-size: 14px; font-weight: 650; color: #fff; }
+.to b { font-size: 15px; display: block; }
+.to small { font-size: 12px; color: var(--c-muted); }
+.rows { display: grid; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid var(--c-line); font-size: 14px; }
+.row:first-child { border-top: 0; }
+.row > span:first-child { color: var(--c-muted); }
+.row > :last-child { text-align: right; font-weight: 550; }
+.row.total > * { font-weight: 650 !important; color: var(--c-ink) !important; }
+.from-btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 8px 5px 10px; border-radius: 10px; background: var(--c-soft); font-weight: 600; font-size: 13px; }
+.from-btn small { color: var(--c-muted); font-weight: 500; }
+.check { display: inline-flex; gap: 6px; align-items: center; }
+.check.ok { color: var(--c-good); }
+.check.bad { color: var(--c-warn); }
+.spin { width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--c-track); border-top-color: var(--c-good); animation: rot .8s linear infinite; }
+@keyframes rot { to { transform: rotate(360deg); } }
+.warn { display: grid; grid-template-columns: 18px 1fr; gap: 8px; font-size: 13px; line-height: 1.4; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--c-warn) 14%, transparent); color: var(--c-ink); }
+.warn svg { color: var(--c-warn); margin-top: 1px; }
+.hold { position: relative; height: 56px; border-radius: 18px; background: var(--c-track); overflow: hidden; font-weight: 650; font-size: 15px; color: var(--c-ink); user-select: none; -webkit-user-select: none; touch-action: none; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.hold::before { content: ""; position: absolute; inset: 0; transform-origin: left; transform: scaleX(var(--k, 0)); background: linear-gradient(90deg, var(--c-fill-a), var(--c-fill-b)); }
+.hold > * { position: relative; }
+.hold.full { color: var(--c-on-fill); }
+.hold.armed { color: var(--c-on-fill); }
+.hold:disabled { opacity: .5; cursor: not-allowed; }
+.hold .lbl { transition: color .2s; }
+.pc-sub { display: flex; justify-content: center; gap: 18px; font-size: 13px; font-weight: 600; color: var(--c-muted); margin-top: -4px; }
+.pc-sub button:hover { color: var(--c-ink); }
+.pc-note { font-size: 12px; color: var(--c-muted); text-align: center; margin-top: -6px; }
+/* receipt */
+.rc { display: grid; gap: 12px; justify-items: center; text-align: center; padding: 6px 0 2px; }
+.rc .tick { width: 64px; height: 64px; }
+.rc .tick circle { stroke: var(--c-good); stroke-dasharray: 190; stroke-dashoffset: 190; animation: draw .6s ease forwards; }
+.rc .tick path { stroke: var(--c-good); stroke-dasharray: 40; stroke-dashoffset: 40; animation: draw .35s .45s ease forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.rc h4 { margin: 0; font-size: 15px; font-weight: 600; color: var(--c-muted); }
+.rc .ramt { font-size: 34px; font-weight: 650; letter-spacing: -0.04em; }
+.rc .meta { width: 100%; text-align: left; }
+.token { width: 100%; padding: 12px; border-radius: 14px; background: var(--c-soft); display: grid; gap: 4px; text-align: left; }
+.token small { color: var(--c-muted); font-size: 12px; }
+.token b { font-size: 18px; letter-spacing: .06em; font-variant-numeric: tabular-nums; }
+.rc-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
+.rc-actions button { height: 44px; border-radius: 14px; background: var(--c-soft); font-weight: 600; font-size: 14px; }
+.rc-actions button.pri { background: var(--c-good); color: var(--c-on-fill); }
+.mini { margin-left: 32px; background: var(--c-bg); border: 1px solid var(--c-line); border-radius: 22px; padding: 6px 14px; animation: cardIn .45s cubic-bezier(.2,.9,.25,1.1); }
+.mini .row b { font-weight: 650; }
+.mini .row .sub { display: block; color: var(--c-muted); font-size: 12px; font-weight: 500; }
+.mini h5 { margin: 10px 0 2px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--c-muted); font-weight: 600; }
+
+/* Face ID */
+.faceid { position: absolute; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(4,10,6,.35); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; pointer-events: none; transition: opacity .2s; }
+.faceid.on { opacity: 1; }
+.faceid .box { width: 150px; height: 150px; border-radius: 34px; background: rgba(20,24,22,.85); display: grid; place-items: center; gap: 8px; color: #fff; font-size: 13px; font-weight: 550; padding: 22px 0 18px; }
+.faceid svg { width: 64px; height: 64px; }
+.faceid .scan { animation: pulse 0.8s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .45; transform: scale(.95); } }
+
+.toast { position: absolute; left: 50%; top: 62px; z-index: 55; transform: translate(-50%, -20px); opacity: 0; background: #121614; color: #fff; padding: 10px 14px; border-radius: 14px; font-size: 13px; font-weight: 550; box-shadow: 0 10px 30px -10px rgba(0,0,0,.5); transition: opacity .3s, transform .3s; pointer-events: none; white-space: nowrap; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- Narrow screens: the phone is the page ---------- */
+@media (max-width: 760px) {
+  body { padding: 0; }
+  .stage { display: block; padding: 0; }
+  .brief { display: none; }
+  .device { --h: 100%; width: 100%; height: 100%; border-radius: 0; padding: 0; background: none; box-shadow: none; }
+  .screen { border-radius: 0; }
+  .island, .statusbar, .homebar { display: none; }
+  .app-head { padding-top: calc(16px + env(safe-area-inset-top, 0px)); }
+  .ai-head { padding-top: calc(14px + env(safe-area-inset-top, 0px)); }
+  .chat { padding-top: calc(76px + env(safe-area-inset-top, 0px)); }
+}
+@media (max-width: 1060px) and (min-width: 761px) { .stage { grid-template-columns: minmax(0, 280px) auto; gap: 36px; } .brief h1 { font-size: 34px; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001s !important; animation-iteration-count: 1 !important; transition-duration: .001s !important; }
+}
+</style>
+</head>
+<body>
+<div class="stage">
+  <section class="brief" aria-label="About this prototype">
+    <h1>Bank by tapping, <span>or just say it.</span></h1>
+    <p>The app you know on one side. Co-op AI on the other. Type what you want done with your money and it lines up the transfer for you to check and confirm.</p>
+    <div>
+      <h2>Move between them</h2>
+      <ul class="gestures">
+        <li><span class="kbd">⇠</span> Swipe left on Home for Co-op AI, right to go back</li>
+        <li><span class="kbd">✦</span> Tap the sparkle in the tab bar</li>
+        <li><span class="kbd">/</span> Press slash to start typing</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Try saying</h2>
+      <div class="tries" id="tries"></div>
+    </div>
+    <p class="foot">Prototype with sample balances, people and fees. Common requests are understood on the device. Anything else goes to Claude when this view allows it. Money never moves without a hold to confirm.</p>
+  </section>
+
+  <div class="device">
+    <div class="screen" id="screen">
+      <div class="island"></div>
+      <div class="statusbar" aria-hidden="true">
+        <span id="clock">9:41</span>
+        <span style="display:flex;gap:6px;align-items:center">
+          <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.6c2.3 0 4.4.9 6 2.4l1.2-1.3A10.4 10.4 0 0 0 8 .8C5.2.8 2.7 1.9.8 3.7L2 5c1.6-1.5 3.7-2.4 6-2.4Zm0 3.6c1.3 0 2.5.5 3.4 1.3l1.2-1.3A6.8 6.8 0 0 0 8 4.4c-1.8 0-3.4.7-4.6 1.8l1.2 1.3c.9-.8 2.1-1.3 3.4-1.3Zm0 3.4c-.6 0-1.1.2-1.5.6L8 11.8l1.5-1.6c-.4-.4-.9-.6-1.5-.6Z"/></svg>
+          <svg width="27" height="13" viewBox="0 0 27 13" fill="none"><rect x=".5" y=".5" width="23" height="12" rx="3.5" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="20" height="9" rx="2" fill="currentColor"/><rect x="25" y="4.5" width="1.5" height="4" rx=".75" fill="currentColor" opacity=".4"/></svg>
+        </span>
+      </div>
+
+      <div class="track" id="track">
+        <!-- ===== App ===== -->
+        <section class="pane app" id="appPane" aria-label="Home">
+          <div class="app-scroll" id="appScroll">
+            <header class="app-head">
+              <div class="head-row">
+                <div class="me">VN</div>
+                <div class="handle">@ndekei <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5 6 7.5l3-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                <button class="icon-btn" aria-label="Notifications"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15L6 16Z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg></button>
+              </div>
+              <div class="bal">
+                <small>Available balance <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></small>
+                <div class="big num" id="availBig">0<sub>.00</sub></div>
+                <div class="total num" id="totalBal">Total balance: Ksh. 0</div>
+              </div>
+              <div class="head-cta">
+                <button class="btn-dark" id="reqBtn">Request</button>
+                <button class="btn-light" id="sendBtn">Send</button>
+              </div>
+            </header>
+
+            <div class="sec">
+              <div class="sec-h"><h3>Accounts</h3><button id="accAll">Manage</button></div>
+              <div class="accts" id="accts" data-hscroll></div>
+            </div>
+            <div class="sec">
+              <div class="sec-h"><h3>Recent transactions</h3><button>View all</button></div>
+              <div class="tx-list" id="txList"></div>
+            </div>
+          </div>
+
+          <button class="edge" id="edge" aria-label="Open Co-op AI">CO-OP AI ‹</button>
+          <div class="hint" id="hint">Swipe left to talk to Co-op AI</div>
+
+          <nav class="tabbar">
+            <div class="tabs">
+              <button class="on" aria-label="Home"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V20H4z"/><path d="M9.5 20v-5h5v5"/></svg></button>
+              <button aria-label="Statements"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="5" y="3.5" width="14" height="17" rx="2.5"/><path d="M9 8.5h6M9 12h6M9 15.5h3.5"/></svg></button>
+              <button aria-label="Products"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.8"/></svg></button>
+              <button aria-label="Profile"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c1.2-3.5 4-5 7-5s5.8 1.5 7 5" stroke-linecap="round"/></svg></button>
+            </div>
+            <button class="spark-btn" id="sparkBtn" aria-label="Open Co-op AI"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5c.5 4.6 2.9 7 7.5 7.5-4.6.5-7 2.9-7.5 7.5-.5-4.6-2.9-7-7.5-7.5 4.6-.5 7-2.9 7.5-7.5Z"/><path d="M19 15c.2 1.8 1.2 2.8 3 3-1.8.2-2.8 1.2-3 3-.2-1.8-1.2-2.8-3-3 1.8-.2 2.8-1.2 3-3Z" opacity=".7"/></svg></button>
+          </nav>
+
+          <div class="sheet-wrap" id="sheetWrap">
+            <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+              <div class="grab"></div>
+              <div class="sheet-h"><div><b id="sheetTitle">Review payment</b><small>Lined up by Co-op AI</small></div><button class="x" id="sheetX" aria-label="Close"><svg width="12" height="12" viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m2 2 8 8M10 2l-8 8"/></svg></button></div>
+              <div id="sheetBody"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== Co-op AI ===== -->
+        <section class="pane ai" id="aiPane" aria-label="Co-op AI">
+          <div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+          <header class="ai-head">
+            <button class="pill-btn" id="toApp"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>Home</button>
+            <div class="ai-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5c.5 4.6 2.9 7 7.5 7.5-4.6.5-7 2.9-7.5 7.5-.5-4.6-2.9-7-7.5-7.5 4.6-.5 7-2.9 7.5-7.5Z"/></svg>Co-op AI</div>
+            <div class="right"><button class="reset" id="resetBtn">Reset</button></div>
+          </header>
+          <div class="chat" id="chat" aria-live="polite">
+            <div class="welcome" id="welcome">
+              <h2><span id="greet">Good evening</span>, Victor. <em>What should your money do?</em></h2>
+              <p>Send, save, pay a bill or ask about your spending. I'll line it up and you hold to confirm.</p>
+              <div class="sugs" id="sugs"></div>
+            </div>
+          </div>
+          <div class="composer">
+            <div class="mentions" id="mentions" hidden></div>
+            <form class="compose-box" id="composeForm" autocomplete="off">
+              <input id="prompt" type="text" placeholder="Send, save, pay or ask…" aria-label="Message Co-op AI" enterkeyhint="send">
+              <button class="send-btn" id="sendMsg" type="submit" aria-label="Send" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></svg></button>
+            </form>
+          </div>
+        </section>
+      </div>
+
+      <div class="homebar"></div>
+      <div class="faceid" id="faceid" aria-hidden="true"><div class="box"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" class="scan" id="faceGlyph"><path d="M6 20V12a6 6 0 0 1 6-6h8M44 6h8a6 6 0 0 1 6 6v8M58 44v8a6 6 0 0 1-6 6h-8M20 58h-8a6 6 0 0 1-6-6v-8"/><path d="M22 24v4M42 24v4M32 24v10h-3M24 42c4.5 4 11.5 4 16 0"/></svg><span id="faceLbl">Face ID</span></div></div>
+      <div class="toast" id="toast"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+const $ = (s, r = document) => r.querySelector(s);
+const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const wait = (ms) => new Promise(r => setTimeout(r, reduce ? Math.min(ms, 60) : ms));
+const fmt = (n) => "Ksh " + Number(n).toLocaleString("en-KE", { maximumFractionDigits: 2 });
+const fmt2 = (n) => Number(n).toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const group4 = (d) => String(d).replace(/\D/g, "").replace(/(\d{4})(?=\d)/g, "$1 ");
+const phoneFmt = (d) => { d = String(d).replace(/\D/g, "").replace(/^254/, "0"); return d.replace(/^(\d{4})(\d{3})(\d{3})$/, "$1 $2 $3"); };
+
+/* ---------- Icons ---------- */
+const IC = {
+  spark: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5c.5 4.6 2.9 7 7.5 7.5-4.6.5-7 2.9-7.5 7.5-.5-4.6-2.9-7-7.5-7.5 4.6-.5 7-2.9 7.5-7.5Z"/></svg>',
+  send: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg>',
+  save: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>',
+  bill: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg>',
+  till: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16l-1.5 11a2 2 0 0 1-2 1.8H7.5a2 2 0 0 1-2-1.8L4 7Z"/><path d="M9 7V5.5a3 3 0 0 1 6 0V7"/></svg>',
+  bal: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10 12 4l9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18"/></svg>',
+  chart: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+  warn: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3 2 20h20L12 3Z" stroke-linejoin="round"/><path d="M12 10v4M12 17.2v.3"/></svg>',
+  swap: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 4.5 6 2l2.5 2.5M3.5 7.5 6 10l2.5-2.5"/></svg>',
+  ok: '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0Zm3.3 5.3a.8.8 0 0 0-1.1 0L7 8.6 5.8 7.3a.8.8 0 1 0-1.1 1.1l1.8 1.8a.8.8 0 0 0 1.1 0l3.7-3.8a.8.8 0 0 0 0-1.1Z"/></svg>',
+  lock: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg>',
+};
+
+/* ---------- Sample data ---------- */
+const TODAY = new Date(2026, 9, 26, 18, 20);
+const ACCOUNTS = () => ([
+  { id: "current", name: "Current account", short: "Current", mask: "4821", full: "0110 2929 34821", bal: 148210 },
+  { id: "savings", name: "Savings account", short: "Savings", mask: "0937", full: "0110 2929 30937", bal: 120400 },
+  { id: "mmf", name: "Money Market Fund", short: "Money Market Fund", mask: "7710", full: "MMF 7710", bal: 312500, mmf: true, earned: 2847 },
+  { id: "salary", name: "Salary account", short: "Salary", mask: "2210", full: "0110 2929 22210", bal: 3850 },
+]);
+const PEOPLE = [
+  { id: "victor", name: "Victor Mutua", initials: "VM", color: "#2563C9", tag: "@victor", coop: "011045238903" },
+  { id: "amara", name: "Amara Wanjiru", initials: "AW", color: "#2E8B3A", tag: "@amara", coop: "01129087654300" },
+  { id: "amani", name: "Amani Kiprono", initials: "AK", color: "#7A4CC2", tag: "@amani.k" },
+  { id: "lisa", name: "Lisa Mwende", initials: "LM", color: "#C2551F", phone: "0723542388" },
+  { id: "brian", name: "Brian Otieno", initials: "BO", color: "#0F7C8C", bank: "CIB Kenya", acct: "0030512788410" },
+  { id: "kevin", name: "Kevin Odhiambo", initials: "KO", color: "#9B1E5A", bank: "Equity Bank", acct: "1180291746532" },
+];
+const BANKS = [
+  ["Equity Bank", /\bequity\b/], ["KCB Bank", /\bkcb\b/], ["NCBA Bank", /\bncba\b/], ["Stanbic Bank", /\bstanbic\b/], ["Absa Bank", /\babsa|barclays\b/],
+  ["I&M Bank", /\bi\s*&\s*m\b|\bi and m\b/], ["CIB Kenya", /\bcib\b|commercial international/], ["Family Bank", /\bfamily bank\b/], ["DTB", /\bdtb\b|diamond trust/],
+  ["Standard Chartered", /stanchart|standard chartered/], ["Co-operative Bank", /\bco-?op(erative)?\b/],
+];
+const BILLERS = { kplc: { name: "KPLC Prepaid", number: "888880", acctLabel: "Meter number", acct: "54907812345", initials: "KP", color: "#D9572B" } };
+const MERCHANTS = [
+  { name: "Naivas Supermarket", till: "5207319", initials: "NV", color: "#E8761E", re: /naivas/ },
+  { name: "Total Energies", till: "8812245", initials: "TE", color: "#C8102E", re: /total/ },
+  { name: "Java House", till: "6630214", initials: "JH", color: "#6B3E26", re: /java/ },
+];
+const TX0 = () => ([
+  { t: "KFC Westlands", d: [26, "12:35"], a: -780, c: "Eating out", i: "KF", col: "#C8102E" },
+  { t: "Java House Valley Arcade", d: [25, "09:10"], a: -1150, c: "Eating out", i: "JH", col: "#6B3E26" },
+  { t: "Naivas Supermarket", d: [24, "18:02"], a: -4120, c: "Shopping", i: "NV", col: "#E8761E" },
+  { t: "Total Energies", d: [24, "08:47"], a: -3000, c: "Fuel", i: "TE", col: "#C8102E" },
+  { t: "Paul's Bakeries", d: [23, "08:12"], a: -640, c: "Eating out", i: "PB", col: "#3A3A3A" },
+  { t: "KPLC Prepaid", d: [22, "20:15"], a: -1000, c: "Bills", i: "KP", col: "#D9572B" },
+  { t: "Artcaffe Westgate", d: [21, "13:40"], a: -1980, c: "Eating out", i: "AC", col: "#8C6A3F" },
+  { t: "Uber trip", d: [21, "23:05"], a: -860, c: "Transport", i: "UB", col: "#111111" },
+  { t: "Amara Wanjiru", d: [20, "16:22"], a: -2500, c: "Transfers", i: "AW", col: "#2E8B3A" },
+  { t: "Salary · October", d: [19, "07:00"], a: 185000, c: "Income", i: "SL", col: "#1F7A2E" },
+  { t: "Chacha's Gents", d: [19, "11:30"], a: -800, c: "Personal care", i: "CG", col: "#4B5563" },
+]);
+let accounts = ACCOUNTS();
+let txs = TX0();
+const acct = (id) => accounts.find(a => a.id === id);
+
+/* ---------- App rendering ---------- */
+const dateLabel = (d) => { const day = d[0]; const m = "Oct"; return (day === 26 ? "Today" : day === 25 ? "Yesterday" : `${day} ${m}`) + ", " + d[1]; };
+let shownAvail = 0;
+function countTo(node, from, to, render) {
+  if (reduce || from === to) { render(to); return; }
+  const t0 = performance.now(), dur = 900;
+  const step = (now) => { const k = Math.min(1, (now - t0) / dur); const e = 1 - Math.pow(1 - k, 3); render(from + (to - from) * e); if (k < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+function renderApp(flashIds = [], newTx = false) {
+  const cur = acct("current").bal;
+  countTo($("#availBig"), shownAvail, cur, (v) => { const [i, f] = fmt2(v).split("."); $("#availBig").innerHTML = `${i}<sub>.${f}</sub>`; });
+  shownAvail = cur;
+  const total = accounts.reduce((s, a) => s + a.bal, 0);
+  $("#totalBal").textContent = "Total balance: Ksh. " + fmt2(total);
+  const box = $("#accts"); box.innerHTML = "";
+  for (const a of accounts) {
+    const c = el("div", "acct" + (a.mmf ? " mmf" : "") + (flashIds.includes(a.id) ? " flash" : ""));
+    c.innerHTML = `<span class="t">${esc(a.short)} ${a.mmf ? "" : "··" + a.mask}</span><span class="v num">${fmt(a.bal)}</span><span class="s">${a.mmf ? "+" + fmt(a.earned) + " this month" : "Available"}</span>`;
+    box.appendChild(c);
+    if (flashIds.includes(a.id)) setTimeout(() => c.classList.remove("flash"), 2200);
+  }
+  const list = $("#txList"); list.innerHTML = "";
+  txs.slice(0, 6).forEach((t, k) => {
+    const r = el("div", "tx" + (newTx && k === 0 ? " new" : ""));
+    r.innerHTML = `<div class="av" style="background:${t.col}">${esc(t.i)}</div><div style="min-width:0"><div class="n">${esc(t.t)}</div><div class="d">${dateLabel(t.d)}</div></div><div><div class="a num ${t.a > 0 ? "cr" : ""}">${t.a > 0 ? "+" : "−"}${fmt(Math.abs(t.a))}</div><div class="c">${esc(t.c)}</div></div>`;
+    list.appendChild(r);
+  });
+}
+
+/* ---------- Pager & gestures ---------- */
+const screen = $("#screen"), track = $("#track");
+let pos = 0; // 0 = app, 1 = AI
+function setPos(v, animate) {
+  track.classList.toggle("snap", !!animate);
+  track.style.transform = `translateX(${-v * 50}%)`;
+  screen.classList.toggle("is-ai", v > 0.5);
+  $(".statusbar").style.color = v > 0.5 ? "#EAF3EC" : "#fff";
+}
+function go(target, opts = {}) {
+  pos = target; setPos(target, true);
+  $("#appPane").inert = target === 1; $("#aiPane").inert = target === 0;
+  if (target === 1 && opts.focus !== false) setTimeout(() => { if (matchMedia("(pointer: fine)").matches) $("#prompt").focus({ preventScroll: true }); }, 420);
+  if (target === 0) $("#prompt").blur();
+}
+let drag = null, justDragged = false;
+screen.addEventListener("pointerdown", (e) => {
+  if (e.button !== 0) return;
+  if (e.target.closest("input, .hold, [data-hscroll], .sheet-wrap.open, .mentions")) return;
+  drag = { x: e.clientX, y: e.clientY, t: performance.now(), id: e.pointerId, active: false, w: screen.clientWidth, hist: [] };
+});
+screen.addEventListener("pointermove", (e) => {
+  if (!drag || e.pointerId !== drag.id) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  if (!drag.active) {
+    if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy) * 1.2) { if (Math.abs(dy) > 14) drag = null; return; }
+    drag.active = true; screen.setPointerCapture(e.pointerId);
+  }
+  let v = pos - dx / drag.w;
+  if (v < 0) v = v * 0.25; if (v > 1) v = 1 + (v - 1) * 0.25;
+  drag.v = v; drag.hist.push([performance.now(), e.clientX]); if (drag.hist.length > 5) drag.hist.shift();
+  setPos(v, false);
+});
+const endDrag = (e) => {
+  if (!drag) return;
+  if (drag.active) {
+    const h = drag.hist; let vel = 0;
+    if (h.length > 1) { const [t0, x0] = h[0], [t1, x1] = h[h.length - 1]; vel = (x1 - x0) / Math.max(1, t1 - t0); }
+    let target = pos;
+    if (vel < -0.4) target = 1; else if (vel > 0.4) target = 0; else target = drag.v > 0.5 ? 1 : 0;
+    go(target);
+    justDragged = true; setTimeout(() => justDragged = false, 60);
+  }
+  drag = null;
+};
+screen.addEventListener("pointerup", endDrag);
+screen.addEventListener("pointercancel", endDrag);
+screen.addEventListener("click", (e) => { if (justDragged) { e.stopPropagation(); e.preventDefault(); } }, true);
+$("#sparkBtn").onclick = () => go(1);
+$("#edge").onclick = () => go(1);
+$("#toApp").onclick = () => go(0);
+document.addEventListener("keydown", (e) => {
+  const typing = e.target.matches("input, textarea");
+  if (e.key === "/" && !typing) { e.preventDefault(); go(1); setTimeout(() => $("#prompt").focus(), 380); }
+  else if (e.key === "Escape") { if ($("#sheetWrap").classList.contains("open")) closeSheet(); else if (pos === 1 && !typing) go(0); else if (typing) e.target.blur(); }
+  else if (!typing && e.key === "ArrowRight") go(1);
+  else if (!typing && e.key === "ArrowLeft") go(0);
+});
+
+/* ---------- Toast & hint ---------- */
+let toastT;
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 2200); }
+
+/* ---------- Parsing ---------- */
+const lower = (s) => s.toLowerCase().replace(/[’`]/g, "'");
+function parseNum(raw, suf) {
+  let v = parseFloat(String(raw).replace(/,/g, ""));
+  if (!isFinite(v)) return null;
+  suf = (suf || "").toLowerCase();
+  if (suf === "k" || suf === "thousand" || suf === "elfu") v *= 1000;
+  if (suf === "m" || suf === "million" || suf === "mil") v *= 1e6;
+  return Math.round(v * 100) / 100;
+}
+function extractNumbersToSkip(t) {
+  const spans = [];
+  const add = (re, kind) => { let m; re.lastIndex = 0; while ((m = re.exec(t))) spans.push({ s: m.index, e: m.index + m[0].length, raw: m[0], kind, groups: m }); };
+  add(/(?:\+?254|\b0)\s?(?:7|1)\d{2}[\s-]?\d{3}[\s-]?\d{3}\b/g, "phone");
+  add(/\b(?:till|buy goods|lipa)\s*(?:no\.?|number|#)?\s*(\d{5,7})\b/g, "till");
+  add(/\b(?:paybill|pay bill|business(?: no\.?| number)?)\s*(?:no\.?|number|#)?\s*(\d{5,7})\b/g, "paybill");
+  add(/\b(?:meter|mita)\s*(?:no\.?|number|#)?\s*([\d\s]{8,16}\d)\b/g, "meter");
+  add(/\b\d(?:[\d\s-]{8,20})\d\b/g, "acct");
+  return spans.filter((sp, i) => {
+    if (sp.kind === "acct") { const digits = sp.raw.replace(/\D/g, ""); if (digits.length < 10) return false; return !spans.some((o, j) => j !== i && o.kind !== "acct" && sp.s < o.e && sp.e > o.s); }
+    return true;
+  });
+}
+function findAmount(t, skip) {
+  const re = /(?:\b(ksh|kes|kshs|sh|shs)\.?\s*)?(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)\s*(k|m|mil|million|thousand|elfu|bob|\/=|ksh|kes|shillings)?\b/gi;
+  let m, best = null;
+  while ((m = re.exec(t))) {
+    const s = m.index, e = s + m[0].length;
+    if (skip.some(sp => s < sp.e && e > sp.s)) continue;
+    const digits = m[2].replace(/\D/g, "");
+    if (digits.length > 9 && !m[2].includes(",")) continue;
+    const strong = !!(m[1] || m[3] || m[2].includes(","));
+    const v = parseNum(m[2], m[3]);
+    if (!v || v <= 0) continue;
+    const cand = { v, raw: m[0].trim(), s, e, strong };
+    if (!best || (cand.strong && !best.strong)) best = cand;
+    if (best.strong) break;
+  }
+  if (!best) { const w = /\b(elfu|thousand)\s+(\w+)/.exec(t); const wn = { moja: 1, mbili: 2, tatu: 3, nne: 4, tano: 5, sita: 6, saba: 7, nane: 8, tisa: 9, kumi: 10, one: 1, two: 2, three: 3, four: 4, five: 5, ten: 10 }; if (w && wn[w[2]]) best = { v: wn[w[2]] * 1000, raw: w[0], s: w.index, e: w.index + w[0].length, strong: true }; }
+  return best;
+}
+function findBank(t) { for (const [name, re] of BANKS) if (re.test(t)) return name; return null; }
+function resolvePersonByName(name) {
+  if (!name) return null; const n = name.toLowerCase();
+  return PEOPLE.find(p => p.name.toLowerCase().split(" ")[0] === n || p.name.toLowerCase() === n) || null;
+}
+function findRecipient(text, t, skip) {
+  // @tag
+  const tg = /@([a-z0-9._]{2,24})/i.exec(text);
+  if (tg) {
+    const tag = "@" + tg[1].toLowerCase().replace(/\.$/, "");
+    const p = PEOPLE.find(x => x.tag === tag);
+    if (!p) { const near = PEOPLE.filter(x => x.tag && x.tag[1] === tag[1]).map(x => x.tag); return { error: `I couldn't find the Co-op tag ${tag}.` + (near.length ? ` Did you mean ${near.join(" or ")}?` : " Check the spelling or use an account number."), chips: near.map(x => `Send to ${x}`), raw: tg[0] }; }
+    return { person: p, via: "tag", raw: tg[0] };
+  }
+  const poss = /\b([a-z]+)'s\s+(?:co-?op\s+)?(?:acc(?:ount)?|a\/c|number|line|phone|m-?pesa)/.exec(t);
+  const claimed = poss ? poss[1] : null;
+  const phone = skip.find(s => s.kind === "phone");
+  if (phone) {
+    const d = phone.raw.replace(/\D/g, "").replace(/^254/, "0");
+    const p = PEOPLE.find(x => x.phone === d);
+    return { person: p || { id: "ph" + d, name: "M-Pesa " + phoneFmt(d), initials: "MP", color: "#2E8B3A", phone: d, unverified: !p }, via: "mobile", raw: phone.raw, claimed };
+  }
+  const acc = skip.find(s => s.kind === "acct");
+  if (acc) {
+    const d = acc.raw.replace(/\D/g, "");
+    const bank = findBank(t);
+    const isCoop = (/^01\d{10,12}$/.test(d) && (!bank || bank === "Co-operative Bank")) || bank === "Co-operative Bank";
+    if (isCoop) {
+      const p = PEOPLE.find(x => x.coop === d);
+      if (!p) return { error: `I couldn't find a Co-op account ending ${d.slice(-4)}. Check the number and try again.`, raw: acc.raw };
+      return { person: p, via: "coop", raw: acc.raw, claimed, acct: d };
+    }
+    const p = PEOPLE.find(x => x.acct === d);
+    if (!bank && !p) return { need: "bank", acct: d, raw: acc.raw, claimed };
+    if (!p) return { error: `${bank} couldn't confirm who owns account ${group4(d)}. Check the number or pick a saved recipient.`, raw: acc.raw };
+    return { person: p, via: "bank", raw: acc.raw, claimed, acct: d };
+  }
+  // by name: "to Victor", "kwa Lisa", "send Brian 2k"
+  const nm = /\b(?:to|kwa|for|send|tuma|give|pay|transfer)\s+([a-z]+)\b/g; let m;
+  while ((m = nm.exec(t))) {
+    const p = resolvePersonByName(m[1]);
+    if (p) { const via = p.tag ? "tag" : p.phone ? "mobile" : "bank"; const rawIdx = text.toLowerCase().indexOf(m[1]); return { person: p, via, raw: text.substr(rawIdx, m[1].length) }; }
+  }
+  if (claimed) { const p = resolvePersonByName(claimed); if (p) return { person: p, via: p.tag ? "tag" : p.phone ? "mobile" : "bank", raw: claimed }; }
+  return null;
+}
+function pickFrom(t) {
+  if (/\bsavings?\b/.test(t) && /\bfrom\b/.test(t)) return "savings";
+  if (/\bsalary\b/.test(t) && /\bfrom\b/.test(t)) return "salary";
+  if (/\b(mmf|money market)\b/.test(t) && /\bfrom\b/.test(t)) return "mmf";
+  if (/\bcurrent\b/.test(t) && /\bfrom\b/.test(t)) return "current";
+  return null;
+}
+
+let pending = null; // slot-filling memory for local intents
+function understand(text) {
+  const t = lower(text).trim();
+  const skip = extractNumbersToSkip(t);
+  const amt = findAmount(t, skip);
+  const hl = [];
+  if (amt) hl.push({ raw: text.substr(amt.s, amt.e - amt.s), cls: "" });
+
+  if (/^(hi|hey|hello|habari|niaje|sasa|mambo|good (morning|afternoon|evening))\b/.test(t) && t.length < 30) return { kind: "hello" };
+  if (/^(thanks|thank you|asante|thx)\b/.test(t)) return { kind: "thanks" };
+  if (/\b(help|what can you do)\b/.test(t)) return { kind: "help" };
+  if (/\b(balance|how much (do i have|is in|money)|salio)\b/.test(t) && !amt) return { kind: "balances" };
+  if (/\b(spen[dt]|spending|nimetumia|matumizi)\b/.test(t)) {
+    const cat = /food|eat|lunch|dinner|restaurant|chakula/.test(t) ? "Eating out" : /fuel|petrol|gas|mafuta/.test(t) ? "Fuel" : /shop|groceries|supermarket/.test(t) ? "Shopping" : /bill|kplc|power|stima/.test(t) ? "Bills" : null;
+    const days = /month|mwezi/.test(t) ? 30 : 7;
+    return { kind: "spending", category: cat, days };
+  }
+  const intoMMF = /\b(mmf|money market|unit trust)\b/.test(t);
+  if (intoMMF && /\b(withdraw|take out|cash out|toa|move .* (to|into) (my )?current|back to)\b/.test(t)) {
+    if (!amt) return { kind: "ask", need: "amount", draft: { kind: "withdraw_mmf" }, q: "How much should I bring back from your Money Market Fund?" };
+    return { kind: "pay", intent: { kind: "withdraw_mmf", amount: amt.v, from: "mmf" }, hl };
+  }
+  const saveVerb = /\b(save|invest|sweep|weka|put|move|top up|add)\b/.test(t);
+  const question = /^(how|what|why|explain|tell me|is|are|can|does)\b/.test(t);
+  if ((intoMMF && (saveVerb || amt) && !question) || (/\b(save|invest|sweep|weka)\b/.test(t) && !/@\w/.test(t) && !question)) {
+    {
+      if (!amt) return { kind: "ask", need: "amount", draft: { kind: "save_mmf", from: pickFrom(t) || "current" }, q: "How much should I sweep into your Money Market Fund?" };
+      return { kind: "pay", intent: { kind: "save_mmf", amount: amt.v, from: pickFrom(t) || "current" }, hl };
+    }
+  }
+  if (/\b(kplc|tokens?|stima|electricity|power)\b/.test(t)) {
+    const meter = skip.find(s => s.kind === "meter");
+    const b = BILLERS.kplc;
+    const intent = { kind: "pay_bill", biller: { ...b, acct: meter ? meter.groups[1].replace(/\D/g, "") : b.acct }, amount: amt && amt.v, from: pickFrom(t) };
+    if (!amt) return { kind: "ask", need: "amount", draft: intent, q: "How much worth of KPLC tokens?" };
+    return { kind: "pay", intent, hl };
+  }
+  const till = skip.find(s => s.kind === "till");
+  const merchant = MERCHANTS.find(m => m.re.test(t));
+  if (till || (merchant && /\b(pay|lipa)\b/.test(t))) {
+    const num = till ? till.groups[1] : merchant.till;
+    const mer = MERCHANTS.find(m => m.till === num) || (merchant && !till ? merchant : null);
+    if (!mer) return { kind: "say", text: `Till ${num} isn't one I can confirm yet. Check the number on the green sticker.` };
+    const intent = { kind: "pay_till", merchant: mer, amount: amt && amt.v, from: pickFrom(t) };
+    if (!amt) return { kind: "ask", need: "amount", draft: intent, q: `How much are you paying ${mer.name}?` };
+    return { kind: "pay", intent, hl };
+  }
+  const pb = skip.find(s => s.kind === "paybill");
+  if (pb) return { kind: "say", text: `I can pay Pay Bill ${pb.groups[1]} once I know the account number. Try "Pay bill ${pb.groups[1]} account 12345 Ksh 1,000".` };
+
+  const wantsSend = /\b(send|transfer|tuma|pay|give|lipa|move|refund)\b/.test(t) || /@\w/.test(t);
+  const rec = findRecipient(text, t, skip);
+  if (rec && rec.raw) hl.push({ raw: rec.raw, cls: "who" });
+  if (wantsSend || rec) {
+    if (rec && rec.error) return { kind: "say", text: rec.error, chips: rec.chips };
+    if (rec && rec.need === "bank") return { kind: "ask", need: "bank", draft: { kind: "send", acct: rec.acct, amount: amt && amt.v, claimed: rec.claimed, from: pickFrom(t) }, q: `Which bank is account ${group4(rec.acct)} with?`, hl };
+    if (!rec) {
+      if (!amt) return null;
+      return { kind: "ask", need: "recipient", draft: { kind: "send", amount: amt.v, from: pickFrom(t) }, q: `Who should get ${fmt(amt.v)}?`, hl };
+    }
+    const intent = { kind: "send", person: rec.person, via: rec.via, amount: amt && amt.v, claimed: rec.claimed, from: pickFrom(t) };
+    if (!amt) return { kind: "ask", need: "amount", draft: intent, q: `How much should I send ${rec.person.name.split(" ")[0]}?`, hl };
+    return { kind: "pay", intent, hl };
+  }
+  return null;
+}
+function fillPending(text) {
+  if (!pending) return null;
+  const t = lower(text).trim(); const skip = extractNumbersToSkip(t);
+  const d = { ...pending.draft };
+  if (pending.need === "amount") {
+    const a = findAmount(t, skip); if (!a) return null; d.amount = a.v;
+    return { kind: "pay", intent: d, hl: [{ raw: text.substr(a.s, a.e - a.s), cls: "" }] };
+  }
+  if (pending.need === "recipient") {
+    const r = findRecipient(text, t, skip) || (resolvePersonByName(t) ? { person: resolvePersonByName(t), via: resolvePersonByName(t).tag ? "tag" : resolvePersonByName(t).phone ? "mobile" : "bank", raw: text } : null);
+    if (!r) return null; if (r.error) return { kind: "say", text: r.error };
+    if (r.need === "bank") { pending = { need: "bank", draft: { ...d, acct: r.acct } }; return { kind: "ask", need: "bank", draft: pending.draft, q: `Which bank is account ${group4(r.acct)} with?` }; }
+    Object.assign(d, { person: r.person, via: r.via });
+    return { kind: "pay", intent: d, hl: [{ raw: r.raw, cls: "who" }] };
+  }
+  if (pending.need === "bank") {
+    const bank = findBank(t); if (!bank) return null;
+    if (bank === "Co-operative Bank") { const p = PEOPLE.find(x => x.coop === d.acct); if (!p) return { kind: "say", text: "I couldn't find that Co-op account. Check the number." }; Object.assign(d, { person: p, via: "coop" }); }
+    else { const p = PEOPLE.find(x => x.acct === d.acct); if (!p) return { kind: "say", text: `${bank} couldn't confirm who owns account ${group4(d.acct)}. Check the number or pick a saved recipient.` }; Object.assign(d, { person: p, via: "bank" }); }
+    if (!d.amount) return { kind: "ask", need: "amount", draft: d, q: `How much should I send ${d.person.name.split(" ")[0]}?` };
+    return { kind: "pay", intent: d };
+  }
+  return null;
+}
+
+/* ---------- Quotes ---------- */
+const pesalinkFee = (a) => a <= 10000 ? 20 : a <= 50000 ? 50 : a <= 100000 ? 75 : 100;
+const mpesaFee = (a) => a <= 1000 ? 15 : a <= 10000 ? 30 : a <= 70000 ? 55 : 77;
+function quote(it) {
+  const q = { fee: 0, method: "", eta: "Instant", warnings: [], block: null, kindLabel: "", icon: IC.send, cta: "send", eligible: [] };
+  const a = it.amount || 0;
+  switch (it.kind) {
+    case "send":
+      q.kindLabel = "Send money";
+      if (it.via === "tag" || it.via === "coop") { q.method = "Within Co-op"; q.tag = "Free · Instant"; }
+      else if (it.via === "bank") { if (a > 999999) { q.method = "RTGS"; q.fee = 500; q.eta = "Same day"; } else { q.method = "Pesalink"; q.fee = pesalinkFee(a); } q.tag = q.method + " · Instant"; if (q.method === "RTGS") q.tag = "RTGS · Same day"; }
+      else if (it.via === "mobile") { q.method = "M-Pesa"; q.fee = mpesaFee(a); q.tag = "M-Pesa · Instant"; if (a > 250000) q.block = "M-Pesa takes up to Ksh 250,000 per transaction. Split it, or send to a bank account instead."; }
+      q.eligible = ["current", "savings", "salary"];
+      break;
+    case "save_mmf": q.kindLabel = "Save to Money Market Fund"; q.icon = IC.save; q.method = "Sweep"; q.tag = "Free · Instant"; q.cta = "save"; q.eligible = ["current", "savings", "salary"]; break;
+    case "withdraw_mmf": q.kindLabel = "Withdraw from Money Market Fund"; q.icon = IC.save; q.method = "Sweep to Current"; q.tag = "Free · Same day"; q.eta = "Same day"; q.cta = "withdraw"; q.eligible = ["mmf"]; break;
+    case "pay_bill": q.kindLabel = "Pay bill"; q.icon = IC.bill; q.method = "Pay Bill " + it.biller.number; q.fee = 20; q.tag = "Pay Bill · Instant"; q.cta = "pay"; q.eligible = ["current", "savings", "salary"]; break;
+    case "pay_till": q.kindLabel = "Buy goods"; q.icon = IC.till; q.method = "Till " + it.merchant.till; q.tag = "Free · Instant"; q.cta = "pay"; q.eligible = ["current", "savings", "salary"]; break;
+  }
+  q.total = a + q.fee;
+  const from = acct(it.from);
+  if (!q.block && from && q.total > from.bal) {
+    const better = q.eligible.map(acct).find(x => x.bal >= q.total);
+    q.block = `Not enough in ${from.short} (${fmt(from.bal)}).` + (better ? ` Tap From to use ${better.short}.` : "");
+  }
+  if (it.kind === "send" && it.claimed && it.person && it.person.name.split(" ")[0].toLowerCase() !== it.claimed.toLowerCase()) {
+    q.warnings.push(`This account belongs to ${it.person.name}, not ${it.claimed[0].toUpperCase() + it.claimed.slice(1)}. Only continue if that's who you meant.`);
+  }
+  if (a >= 100000 && it.kind === "send") q.warnings.push("That's a large amount for this recipient. Double-check before you hold.");
+  return q;
+}
+function defaultFrom(it) {
+  const q = quote({ ...it, from: null });
+  if (it.from && q.eligible.includes(it.from)) return it.from;
+  const need = (it.amount || 0) + q.fee;
+  const pick = q.eligible.map(acct).find(x => x.bal >= need);
+  return (pick || acct(q.eligible[0])).id;
+}
+
+/* ---------- Payment card ---------- */
+const refCode = () => "CO" + Math.random().toString(36).slice(2, 10).toUpperCase();
+const nowTime = () => { const d = new Date(); return d.toLocaleTimeString("en-KE", { hour: "numeric", minute: "2-digit" }); };
+function recipientView(it) {
+  if (it.kind === "send") {
+    const p = it.person;
+    const sub = it.via === "tag" ? `${p.tag} · Co-op tag` : it.via === "coop" ? `Co-op · ${group4(p.coop)}` : it.via === "bank" ? `${p.bank} · ${group4(p.acct)}` : `M-Pesa · ${phoneFmt(p.phone)}`;
+    return { name: p.name, sub, initials: p.initials, color: p.color };
+  }
+  if (it.kind === "save_mmf") return { name: "Money Market Fund", sub: `Yours · MMF ··${acct("mmf").mask} · ${fmt(acct("mmf").bal)}`, initials: "MF", color: "#1F6B2B" };
+  if (it.kind === "withdraw_mmf") return { name: "Current account", sub: `Yours · ··${acct("current").mask}`, initials: "CA", color: "#1F6B2B" };
+  if (it.kind === "pay_bill") return { name: it.biller.name, sub: `Pay Bill ${it.biller.number} · ${it.biller.acctLabel} ${group4(it.biller.acct)}`, initials: it.biller.initials, color: it.biller.color };
+  if (it.kind === "pay_till") return { name: it.merchant.name, sub: `Buy Goods · Till ${it.merchant.till}`, initials: it.merchant.initials, color: it.merchant.color };
+}
+function buildCard(intent, opts = {}) {
+  const it = { ...intent }; it.from = defaultFrom(it);
+  const card = el("div", "pcard");
+  let editing = false, nameState = (it.kind === "send" && (it.via === "coop" || it.via === "bank" || it.via === "mobile")) ? "checking" : "ok";
+  const render = () => {
+    const q = quote(it); const r = recipientView(it); const from = acct(it.from);
+    const verb = { send: "Hold to send", save: "Hold to save", withdraw: "Hold to withdraw", pay: "Hold to pay" }[q.cta];
+    const nameRow = it.kind === "send" ? (nameState === "checking"
+      ? `<div class="row"><span>Account name</span><span class="check"><i class="spin"></i>Checking with ${it.via === "bank" ? esc(it.person.bank) : it.via === "mobile" ? "M-Pesa" : "Co-op"}</span></div>`
+      : `<div class="row"><span>Account name</span><span class="check ${q.warnings.some(w => w.includes("belongs")) ? "bad" : "ok"}">${IC.ok}${esc(it.person.name.toUpperCase())}</span></div>`) : "";
+    const metaRow = it.kind === "pay_bill" ? `<div class="row"><span>${esc(it.biller.acctLabel)}</span><span class="num">${group4(it.biller.acct)}</span></div>` : "";
+    card.innerHTML = `
+      <div class="pc-top"><div class="pc-kind"><span>${q.icon}</span>${esc(q.kindLabel)}</div><span class="tag">${esc(q.tag)}</span></div>
+      <div class="pc-amt num">${editing ? `<input class="amt-in" inputmode="decimal" aria-label="Amount" value="${it.amount || ""}">` : `<small>Ksh</small>${Number(it.amount || 0).toLocaleString("en-KE")}<button class="edit" data-act="edit">Edit</button>`}</div>
+      <div class="to"><div class="av" style="background:${r.color}">${esc(r.initials)}</div><div style="min-width:0"><b>${esc(r.name)}</b><small>${esc(r.sub)}</small></div></div>
+      <div class="rows">
+        ${nameRow}${metaRow}
+        <div class="row"><span>From</span><button class="from-btn" data-act="from" ${q.eligible.length < 2 ? "disabled" : ""}>${esc(from.short)} ${from.mmf ? "" : "··" + from.mask} <small class="num">${fmt(from.bal)}</small>${q.eligible.length > 1 ? IC.swap : ""}</button></div>
+        <div class="row"><span>Method</span><span>${esc(q.method)} · ${esc(q.eta)}</span></div>
+        <div class="row"><span>Fee</span><span class="num">${q.fee ? fmt(q.fee) : "Free"}</span></div>
+        <div class="row total"><span>Total</span><span class="num">${fmt(q.total)}</span></div>
+      </div>
+      ${q.block ? `<div class="warn">${IC.warn}<span>${esc(q.block)}</span></div>` : ""}
+      ${q.warnings.map(w => `<div class="warn">${IC.warn}<span>${esc(w)}</span></div>`).join("")}
+      <button class="hold" data-act="hold" ${q.block || nameState === "checking" || editing ? "disabled" : ""} aria-label="${verb} ${fmt(q.total)}. Press and hold.">${IC.lock}<span class="lbl">${verb} ${fmt(q.total)}</span></button>
+      <div class="pc-sub">${opts.inSheet ? "" : `<button data-act="open">Open in app</button>`}<button data-act="cancel">Cancel</button></div>`;
+    wireHold($(".hold", card), () => complete(it, q));
+    if (editing) { const inp = $(".amt-in", card); inp.focus(); inp.select(); const done = () => { const v = parseNum(inp.value.replace(/[^\d.,k]/gi, "").replace(/k$/i, ""), /k$/i.test(inp.value) ? "k" : ""); if (v > 0) it.amount = v; editing = false; render(); }; inp.onkeydown = (e) => { if (e.key === "Enter") done(); if (e.key === "Escape") { editing = false; render(); } }; inp.onblur = done; }
+  };
+  card.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-act]"); if (!b) return; const act = b.dataset.act;
+    if (act === "edit") { editing = true; render(); }
+    if (act === "from") { const el2 = quote(it).eligible; it.from = el2[(el2.indexOf(it.from) + 1) % el2.length]; render(); }
+    if (act === "cancel") { card.innerHTML = `<div class="pc-note" style="margin:0">Cancelled. Nothing was sent.</div>`; card.style.padding = "12px"; if (opts.inSheet) closeSheet(); }
+    if (act === "open") { openSheet(it); card.innerHTML = `<div class="pc-note" style="margin:0">Moved to the app to finish.</div>`; card.style.padding = "12px"; }
+  });
+  const complete = async (it2, q) => {
+    await faceId();
+    const ref = refCode();
+    // Apply to balances
+    const from = acct(it2.from); from.bal -= q.total;
+    const flash = [from.id];
+    const r = recipientView(it2);
+    let label = r.name, cat = "Transfers", inital = r.initials, col = r.color;
+    if (it2.kind === "save_mmf") { acct("mmf").bal += it2.amount; flash.push("mmf"); cat = "Savings"; label = "Saved to Money Market Fund"; }
+    if (it2.kind === "withdraw_mmf") { acct("current").bal += it2.amount; flash.push("current"); cat = "Savings"; label = "From Money Market Fund"; }
+    if (it2.kind === "pay_bill") cat = "Bills";
+    if (it2.kind === "pay_till") cat = "Shopping";
+    const amtSigned = it2.kind === "withdraw_mmf" ? 0 : -q.total;
+    if (it2.kind !== "withdraw_mmf") txs.unshift({ t: label, d: [26, nowTime()], a: amtSigned, c: cat, i: inital, col });
+    renderApp(flash, it2.kind !== "withdraw_mmf");
+    const token = it2.kind === "pay_bill" ? Array.from({ length: 5 }, () => String(Math.floor(1000 + Math.random() * 9000))).join(" ") : null;
+    const done = { send: "Sent", save: "Saved", withdraw: "On its way", pay: "Paid" }[q.cta];
+    card.innerHTML = `<div class="rc">
+      <svg class="tick" viewBox="0 0 64 64" fill="none" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="32" r="29"/><path d="m20 33 8 8 16-17"/></svg>
+      <h4>${done} to ${esc(r.name)}</h4>
+      <div class="ramt num">${fmt(it2.amount)}</div>
+      ${token ? `<div class="token"><small>Your KPLC token</small><b>${token}</b></div>` : ""}
+      <div class="rows meta">
+        <div class="row"><span>Reference</span><span class="num">${ref}</span></div>
+        <div class="row"><span>From</span><span>${esc(from.short)} ${from.mmf ? "" : "··" + from.mask}</span></div>
+        <div class="row"><span>Fee</span><span class="num">${q.fee ? fmt(q.fee) : "Free"}</span></div>
+        <div class="row"><span>Time</span><span>Today, ${nowTime()}</span></div>
+      </div>
+      <div class="rc-actions"><button data-r="copy">Copy receipt</button><button class="pri" data-r="view">${opts.inSheet ? "Done" : "View in app"}</button></div>
+    </div>`;
+    card.onclick = async (e) => {
+      const b = e.target.closest("[data-r]"); if (!b) return;
+      if (b.dataset.r === "view") { if (opts.inSheet) closeSheet(); else go(0); $("#appScroll").scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" }); }
+      if (b.dataset.r === "copy") { const txt = `Co-op Bank · ${done} ${fmt(it2.amount)} to ${r.name} (${r.sub}). Ref ${ref}. ${token ? "Token " + token + ". " : ""}Today ${nowTime()}.`; try { await navigator.clipboard.writeText(txt); toast("Receipt copied"); } catch { toast("Couldn't copy here"); } }
+    };
+    turns.push({ role: "assistant", content: `[Completed: ${done} ${fmt(it2.amount)} to ${r.name}, ref ${ref}.]` });
+    if (!opts.inSheet) followUps(card.parentElement, it2);
+  };
+  render();
+  if (nameState === "checking") setTimeout(() => { nameState = "ok"; render(); }, reduce ? 50 : 900);
+  return card;
+}
+function wireHold(btn, onDone) {
+  if (!btn) return;
+  let raf, t0, done = false;
+  const DUR = reduce ? 500 : 900;
+  const start = (e) => {
+    if (btn.disabled || done) return; e.preventDefault(); btn.setPointerCapture?.(e.pointerId);
+    t0 = performance.now(); btn.classList.add("armed");
+    const step = (now) => { const k = Math.min(1, (now - t0) / DUR); btn.style.setProperty("--k", k); if (k >= 1) { done = true; btn.classList.add("full"); try { navigator.vibrate?.(20); } catch {} onDone(); return; } raf = requestAnimationFrame(step); };
+    raf = requestAnimationFrame(step);
+  };
+  const stop = () => { if (done) return; cancelAnimationFrame(raf); btn.classList.remove("armed"); btn.style.setProperty("--k", 0); };
+  btn.addEventListener("pointerdown", start);
+  btn.addEventListener("pointerup", stop); btn.addEventListener("pointerleave", stop); btn.addEventListener("pointercancel", stop);
+  btn.addEventListener("keydown", (e) => { if ((e.key === " " || e.key === "Enter") && !e.repeat) start(e); });
+  btn.addEventListener("keyup", (e) => { if (e.key === " " || e.key === "Enter") stop(); });
+  btn.addEventListener("click", (e) => { if (!done && !btn.disabled) { e.preventDefault(); const lbl = $(".lbl", btn); const old = lbl.textContent; lbl.textContent = "Keep holding to confirm"; setTimeout(() => { if (!done) lbl.textContent = old; }, 1200); } });
+}
+async function faceId() {
+  const f = $("#faceid"); $("#faceLbl").textContent = "Face ID"; f.classList.add("on");
+  await wait(750);
+  $("#faceGlyph").classList.remove("scan"); $("#faceLbl").textContent = "Confirmed";
+  await wait(380);
+  f.classList.remove("on"); $("#faceGlyph").classList.add("scan");
+}
+
+/* ---------- Sheet (AI → app handoff) ---------- */
+function openSheet(intent) {
+  go(0, { focus: false });
+  const body = $("#sheetBody"); body.innerHTML = "";
+  body.appendChild(buildCard(intent, { inSheet: true }));
+  setTimeout(() => $("#sheetWrap").classList.add("open"), 300);
+}
+function closeSheet() { $("#sheetWrap").classList.remove("open"); }
+$("#sheetX").onclick = closeSheet;
+$("#sheetWrap").addEventListener("click", (e) => { if (e.target.id === "sheetWrap") closeSheet(); });
+
+/* ---------- Chat ---------- */
+const chat = $("#chat");
+const turns = [];
+const scrollDown = () => requestAnimationFrame(() => chat.scrollTo({ top: chat.scrollHeight, behavior: reduce ? "auto" : "smooth" }));
+function userMsg(text, hl = []) {
+  $("#welcome").hidden = true;
+  let html = esc(text);
+  for (const h of hl) { if (!h.raw) continue; const e2 = esc(h.raw); const i = html.toLowerCase().indexOf(e2.toLowerCase()); if (i >= 0) html = html.slice(0, i) + `<mark class="${h.cls}">${html.slice(i, i + e2.length)}</mark>` + html.slice(i + e2.length); }
+  const m = el("div", "msg-u", html); chat.appendChild(m); scrollDown(); return m;
+}
+function aiGroup() { const g = el("div", "msg-a"); chat.appendChild(g); return g; }
+function aiText(g, text) { const t = el("div", "t", `${IC.spark}<p></p>`); $("p", t).textContent = text; g.appendChild(t); scrollDown(); return $("p", t); }
+function typing(g) { const t = el("div", "t", `${IC.spark}<span class="typing"><i></i><i></i><i></i></span>`); g.appendChild(t); scrollDown(); return t; }
+function chips(g, list) {
+  if (!list || !list.length) return;
+  const c = el("div", "chips"); for (const s of list) { const b = el("button", "chip"); b.textContent = s; b.onclick = () => submit(s); c.appendChild(b); } g.appendChild(c); scrollDown();
+}
+function followUps(g, it) {
+  if (!g) return;
+  const list = it.kind === "send" ? ["What's my balance?", "Save 10,000 to my MMF"] : it.kind === "save_mmf" ? ["How much is in my MMF?", "What did I spend this week?"] : ["What's my balance?", "What did I spend this week?"];
+  chips(g, list);
+}
+function balancesCard() {
+  const c = el("div", "mini");
+  const total = accounts.reduce((s, a) => s + a.bal, 0);
+  c.innerHTML = `<h5>Your accounts</h5><div class="rows">${accounts.map(a => `<div class="row"><span>${esc(a.name)}<span class="sub">${a.mmf ? "+" + fmt(a.earned) + " earned this month" : "··" + a.mask}</span></span><b class="num">${fmt(a.bal)}</b></div>`).join("")}<div class="row total"><span>Total</span><span class="num">${fmt(total)}</span></div></div>`;
+  return c;
+}
+function spendingCard(category, days) {
+  const since = 26 - days + 1;
+  const out = txs.filter(t => t.a < 0 && t.d[0] >= since && (!category || t.c === category) && t.c !== "Savings");
+  const sum = out.reduce((s, t) => s + -t.a, 0);
+  const byCat = {}; for (const t of out) byCat[t.c] = (byCat[t.c] || 0) + -t.a;
+  const rows = category ? out.map(t => `<div class="row"><span>${esc(t.t)}<span class="sub">${dateLabel(t.d)}</span></span><b class="num">${fmt(-t.a)}</b></div>`) : Object.entries(byCat).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<div class="row"><span>${esc(k)}</span><b class="num">${fmt(v)}</b></div>`);
+  const c = el("div", "mini");
+  c.innerHTML = `<h5>${category ? esc(category) : "Spending"} · last ${days} days</h5><div class="rows">${rows.join("") || `<div class="row"><span>Nothing yet</span><b>Ksh 0</b></div>`}<div class="row total"><span>Total</span><span class="num">${fmt(sum)}</span></div></div>`;
+  return { card: c, sum, n: out.length };
+}
+const lead = (it) => {
+  const q = quote({ ...it, from: defaultFrom(it) });
+  const first = it.person ? it.person.name.split(" ")[0] : "";
+  if (it.kind === "send" && (it.via === "tag" || it.via === "coop")) return `Here's ${fmt(it.amount)} to ${first}. They bank with Co-op, so it's free and instant.`;
+  if (it.kind === "send" && it.via === "bank") return `Here's ${fmt(it.amount)} to ${first} at ${it.person.bank} by ${q.method}. I'll confirm the name with the bank first.`;
+  if (it.kind === "send" && it.via === "mobile") return `Here's ${fmt(it.amount)} to ${first || "that number"} on M-Pesa.`;
+  if (it.kind === "save_mmf") return `I'll sweep ${fmt(it.amount)} from ${acct(defaultFrom(it)).short} into your Money Market Fund. It earns interest daily once it lands.`;
+  if (it.kind === "withdraw_mmf") return `I'll move ${fmt(it.amount)} from your Money Market Fund back to Current.`;
+  if (it.kind === "pay_bill") return `Buying ${fmt(it.amount)} of KPLC tokens for your saved meter. The token shows up here once it's paid.`;
+  if (it.kind === "pay_till") return `Paying ${it.merchant.name} ${fmt(it.amount)} on till ${it.merchant.till}.`;
+  return "Check the details, then hold to confirm.";
+};
+
+async function localReply(res, g) {
+  const tp = typing(g); await wait(420); tp.remove();
+  if (res.kind === "hello") { aiText(g, "Hi Victor. What should we do with your money today?"); chips(g, SUGS.slice(0, 3).map(s => s.cmd)); return "Greeting"; }
+  if (res.kind === "thanks") { aiText(g, "Anytime."); return "You're welcome"; }
+  if (res.kind === "help") { aiText(g, "I can send money to tags, Co-op and other bank accounts or M-Pesa, sweep cash into your Money Market Fund, buy KPLC tokens, pay tills, and tell you what you've spent."); chips(g, SUGS.map(s => s.cmd).slice(0, 4)); return "Help"; }
+  if (res.kind === "say") { aiText(g, res.text); chips(g, res.chips); return res.text; }
+  if (res.kind === "ask") { pending = { need: res.need, draft: res.draft }; aiText(g, res.q);
+    if (res.need === "amount") chips(g, ["1,000", "2,500", "5,000", "10,000"]);
+    if (res.need === "recipient") chips(g, ["@victor", "@amara", "Lisa", "Brian"]);
+    if (res.need === "bank") chips(g, ["Equity", "KCB", "CIB Kenya", "Co-op"]);
+    return res.q; }
+  if (res.kind === "balances") { const total = accounts.reduce((s, a) => s + a.bal, 0); aiText(g, `You have ${fmt(acct("current").bal)} available in Current and ${fmt(total)} across all accounts.`); g.appendChild(balancesCard()); scrollDown(); return `Showed balances: total ${fmt(total)}`; }
+  if (res.kind === "spending") { const s = spendingCard(res.category, res.days); aiText(g, s.n ? `You've spent ${fmt(s.sum)} on ${res.category ? res.category.toLowerCase() : "everything"} in the last ${res.days} days.` : `No ${res.category ? res.category.toLowerCase() + " " : ""}spending in the last ${res.days} days.`); g.appendChild(s.card); scrollDown(); return `Showed spending ${fmt(s.sum)}`; }
+  if (res.kind === "pay") { pending = null; aiText(g, lead(res.intent)); g.appendChild(buildCard(res.intent)); scrollDown(); return lead(res.intent) + " [Card shown, waiting for the customer to hold to confirm.]"; }
+}
+
+/* ---------- Claude (when the view allows it) ---------- */
+let sampleFn = null, toolsOK = false;
+(async () => {
+  try {
+    if (!window.claude || !window.claude.use) return;
+    sampleFn = await window.claude.use("sample");
+    if (sampleFn) { const lim = await sampleFn.limits().catch(() => null); toolsOK = !!(lim && lim.tools); }
+  } catch { sampleFn = null; }
+})();
+function rulesTurn() {
+  const accs = accounts.map(a => `${a.id}: ${a.name}${a.mmf ? "" : " ··" + a.mask}, balance ${fmt(a.bal)}`).join("; ");
+  const ppl = PEOPLE.map(p => `${p.name}${p.tag ? " tag " + p.tag : ""}${p.coop ? " Co-op account " + p.coop : ""}${p.phone ? " M-Pesa " + p.phone : ""}${p.acct ? " " + p.bank + " account " + p.acct : ""}`).join("; ");
+  const tx = txs.slice(0, 11).map(t => `${t.d[0]} Oct ${t.t} ${t.a} (${t.c})`).join("; ");
+  return `You are Co-op AI, the assistant inside the Co-operative Bank of Kenya app. Today is Monday 26 October 2026. The customer is Victor (@ndekei). Amounts are Kenyan shillings (Ksh).
+Rules:
+- For any money movement call propose_payment. It only shows a card; the customer confirms by holding a button. Never say money has moved.
+- Recipients must come from the directory below. If you can't match one, ask a short question instead.
+- Leave from_account out unless the customer names an account.
+- show_balances and show_spending show cards for those questions.
+- Reply in the customer's language (English, Swahili or Sheng), in at most two short plain-text sentences. No markdown, no lists.
+- Don't give investment advice. You may explain how products in this app work.
+Accounts: ${accs}.
+Directory: ${ppl}.
+Saved biller: KPLC Prepaid Pay Bill 888880, meter 54907812345. Merchants: ${MERCHANTS.map(m => m.name + " till " + m.till).join("; ")}.
+Recent transactions: ${tx}.`;
+}
+function intentFromTool(input) {
+  const kind = String(input.kind || "");
+  const amount = Number(String(input.amount ?? "").replace(/,/g, ""));
+  if (!(amount > 0)) throw new Error("amount must be a positive number of shillings");
+  const from = ["current", "savings", "salary", "mmf"].includes(input.from_account) ? input.from_account : null;
+  if (kind === "save_mmf" || kind === "withdraw_mmf") return { kind, amount, from: kind === "withdraw_mmf" ? "mmf" : from };
+  if (kind === "pay_bill") { const meter = input.bill_account ? String(input.bill_account).replace(/\D/g, "") : BILLERS.kplc.acct; return { kind, amount, from, biller: { ...BILLERS.kplc, acct: meter } }; }
+  if (kind === "pay_till") { const m = MERCHANTS.find(x => x.till === String(input.till || "").replace(/\D/g, "")) || MERCHANTS.find(x => x.name.toLowerCase().includes(String(input.merchant || "").toLowerCase()) && input.merchant); if (!m) throw new Error("unknown till; ask the customer for the till number"); return { kind, amount, from, merchant: m }; }
+  // send
+  let p = null, via = null;
+  if (input.tag) { p = PEOPLE.find(x => x.tag === "@" + String(input.tag).replace(/^@/, "").toLowerCase()); via = "tag"; }
+  else if (input.account_number) { const d = String(input.account_number).replace(/\D/g, ""); p = PEOPLE.find(x => x.coop === d); via = "coop"; if (!p) { p = PEOPLE.find(x => x.acct === d); via = "bank"; } }
+  else if (input.phone) { const d = String(input.phone).replace(/\D/g, "").replace(/^254/, "0"); p = PEOPLE.find(x => x.phone === d); via = "mobile"; }
+  else if (input.name) { p = resolvePersonByName(String(input.name).split(" ")[0]); if (p) via = p.tag ? "tag" : p.phone ? "mobile" : "bank"; }
+  if (!p) throw new Error("recipient not found in the directory; ask the customer who they mean");
+  return { kind: "send", amount, from, person: p, via };
+}
+async function claudeReply(text, g) {
+  const tp = typing(g); let p = null; let cards = 0;
+  const tools = [
+    { name: "propose_payment", description: "Show the customer a confirmation card for one money movement. Returns 'shown' or an error to relay.",
+      inputSchema: { type: "object", properties: {
+        kind: { type: "string", enum: ["send", "save_mmf", "withdraw_mmf", "pay_bill", "pay_till"] },
+        amount: { type: "number", description: "Ksh" },
+        tag: { type: "string" }, account_number: { type: "string" }, phone: { type: "string" }, name: { type: "string", description: "recipient name from the directory" },
+        till: { type: "string" }, merchant: { type: "string" }, bill_account: { type: "string", description: "KPLC meter number" },
+        from_account: { type: "string", enum: ["current", "savings", "salary", "mmf"] } }, required: ["kind", "amount"] },
+      execute: (input) => { const it = intentFromTool(input); g.appendChild(buildCard(it)); cards++; scrollDown(); return "shown"; } },
+    { name: "show_balances", description: "Show the customer a card with all account balances.", execute: () => { g.appendChild(balancesCard()); cards++; scrollDown(); return "shown"; } },
+    { name: "show_spending", description: "Show spending for a category over recent days. Categories: Eating out, Shopping, Fuel, Bills, Transport, Transfers, Personal care.",
+      inputSchema: { type: "object", properties: { category: { type: "string" }, days: { type: "number" } } },
+      execute: (input) => { const s = spendingCard(input.category || null, Math.min(30, Math.max(1, Number(input.days) || 7))); g.appendChild(s.card); cards++; scrollDown(); return { total: s.sum, count: s.n }; } },
+  ];
+  const input = [{ role: "user", content: rulesTurn() }, ...turns.slice(-10), { role: "user", content: text }];
+  if (input[1] && input[1].role === "assistant") input.splice(1, 0, { role: "user", content: "(conversation so far)" });
+  try {
+    const res = await sampleFn(input, { modelTier: "quick", ...(toolsOK ? { tools } : { cache: false }), onText: ({ text: tx }) => { if (!p) { tp.remove(); p = aiText(g, ""); g.insertBefore(p.parentElement, g.firstChild); } p.textContent = tx.replace(/\n{2,}/g, "\n").trim(); scrollDown(); } });
+    if (!p) tp.remove();
+    return res.text;
+  } catch (e) {
+    tp.remove();
+    if (["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed", "tools_unavailable"].includes(e.code)) sampleFn = null;
+    if (e.text && p) return e.text;
+    aiText(g, e.code === "rate_limited" ? "I'm getting a lot of requests right now. Try again in a moment." : "I didn't catch that one. Try something like these:");
+    chips(g, SUGS.slice(0, 3).map(s => s.cmd));
+    return null;
+  }
+}
+
+async function submit(raw) {
+  const text = String(raw || "").trim(); if (!text) return;
+  if (pos !== 1) go(1, { focus: false });
+  $("#prompt").value = ""; $("#sendMsg").disabled = true; hideMentions();
+  const res = fillPending(text) || understand(text);
+  const m = userMsg(text, res && res.hl);
+  const g = aiGroup();
+  turns.push({ role: "user", content: text });
+  let reply;
+  if (res) reply = await localReply(res, g);
+  else if (sampleFn) { pending = null; reply = await claudeReply(text, g); }
+  else { const tp = typing(g); await wait(400); tp.remove(); reply = "I can't do that one yet. I can send money, save to your Money Market Fund, buy KPLC tokens, pay tills and show your spending."; aiText(g, reply); chips(g, SUGS.slice(0, 3).map(s => s.cmd)); }
+  if (reply) turns.push({ role: "assistant", content: reply });
+}
+
+/* ---------- Composer, @mentions ---------- */
+const prompt = $("#prompt");
+$("#composeForm").addEventListener("submit", (e) => { e.preventDefault(); submit(prompt.value); });
+let mentionSel = 0, mentionList = [];
+function hideMentions() { $("#mentions").hidden = true; mentionList = []; }
+prompt.addEventListener("input", () => {
+  $("#sendMsg").disabled = !prompt.value.trim();
+  const m = /@([a-z0-9._]*)$/i.exec(prompt.value.slice(0, prompt.selectionStart));
+  if (!m) return hideMentions();
+  mentionList = PEOPLE.filter(p => p.tag && p.tag.slice(1).startsWith(m[1].toLowerCase()));
+  if (!mentionList.length) return hideMentions();
+  mentionSel = 0; drawMentions();
+});
+function drawMentions() {
+  const box = $("#mentions"); box.innerHTML = ""; box.hidden = false;
+  mentionList.forEach((p, i) => { const b = el("button", "mention" + (i === mentionSel ? " sel" : ""), `<span class="mav" style="background:${p.color}">${p.initials}</span><span>${esc(p.tag)}<br><small>${esc(p.name)}</small></span>`); b.type = "button"; b.onmousedown = (e) => { e.preventDefault(); pickMention(p); }; box.appendChild(b); });
+}
+function pickMention(p) {
+  const pos2 = prompt.selectionStart; const before = prompt.value.slice(0, pos2).replace(/@([a-z0-9._]*)$/i, p.tag + " "); prompt.value = before + prompt.value.slice(pos2);
+  prompt.setSelectionRange(before.length, before.length); hideMentions(); $("#sendMsg").disabled = false; prompt.focus();
+}
+prompt.addEventListener("keydown", (e) => {
+  if ($("#mentions").hidden) return;
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); mentionSel = (mentionSel + (e.key === "ArrowDown" ? 1 : -1) + mentionList.length) % mentionList.length; drawMentions(); }
+  if (e.key === "Tab" || (e.key === "Enter" && mentionList.length)) { e.preventDefault(); pickMention(mentionList[mentionSel]); }
+});
+prompt.addEventListener("blur", () => setTimeout(hideMentions, 120));
+
+/* ---------- Suggestions ---------- */
+const SUGS = [
+  { cmd: "Send 10,000 to @victor", icon: IC.send, note: "Co-op tag · free and instant" },
+  { cmd: "Send 5k to Victor's account 011045238903", icon: IC.send, note: "Account number · name checked" },
+  { cmd: "Save 45,000 to my Money Market Fund", icon: IC.save, note: "Sweep from Current" },
+  { cmd: "Buy KPLC tokens for 1,000", icon: IC.bill, note: "Saved meter · token in chat" },
+  { cmd: "What did I spend on food this week?", icon: IC.chart, note: "From your transactions" },
+  { cmd: "Tuma 2,000 kwa @amara", icon: IC.send, note: "Swahili works too" },
+];
+function drawSugs() {
+  const box = $("#sugs"); box.innerHTML = "";
+  for (const s of SUGS) { const b = el("button", "sug", `<span class="ic">${s.icon}</span><span>${esc(s.cmd)}<small>${esc(s.note)}</small></span>`); b.onclick = () => submit(s.cmd); box.appendChild(b); }
+  const tries = $("#tries"); tries.innerHTML = "";
+  for (const s of SUGS.concat([{ cmd: "Send 3,500 to Brian's account 0030512788410 at CIB" }, { cmd: "Send 2,000 to Brian's account 011045238903" }])) { const b = el("button", "try"); b.textContent = s.cmd; b.onclick = () => submit(s.cmd); tries.appendChild(b); }
+}
+
+/* ---------- Boot ---------- */
+function reset() {
+  accounts = ACCOUNTS(); txs = TX0(); pending = null; turns.length = 0;
+  [...chat.children].forEach(c => { if (c.id !== "welcome") c.remove(); });
+  $("#welcome").hidden = false; renderApp();
+}
+$("#resetBtn").onclick = () => { reset(); toast("Demo reset"); };
+$("#sendBtn").onclick = () => { go(1); setTimeout(() => { prompt.value = "Send "; prompt.dispatchEvent(new Event("input")); }, 200); };
+$("#reqBtn").onclick = () => toast("Requests live in the app flows");
+const h = new Date().getHours(); $("#greet").textContent = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+const tick = () => { $("#clock").textContent = new Date().toLocaleTimeString("en-KE", { hour: "numeric", minute: "2-digit", hour12: false }); };
+tick(); setInterval(tick, 30000);
+drawSugs(); renderApp(); setPos(0, false); $("#aiPane").inert = true;
+setTimeout(() => { $("#hint").classList.add("show"); setTimeout(() => $("#hint").classList.remove("show"), 3600); }, 900);
+
+// expose parser for quick checks
+window.__coop = { understand, quote };
+})();
+</script>
+
+</body>
+</html>
