@@ -142,6 +142,68 @@ Rounds 1 to 5 went deep on one idea: type the number and we work out the bank. B
 
 **Why:** the safest account number is one the customer never typed. In direction 6, the person who owns the account enters it, which removes both typos and the scam where a forwarded message carries someone else's number.
 
+## Round 7: depth on the number itself
+
+Interface Craft's *Conceptual Depth* tactic **Zoom in**: if the account number were the only thing on this screen, what would world class look like?
+
+**Name what isn't working**
+- The dot meter was a second object that described the first. Your eye had to jump between the number and the meter to know how far you'd got.
+- Every keystroke re-rendered the whole number, so nothing ever moved. It just changed.
+
+**Changed**
+- **Remove:** the meter is gone. The number now shows its own shape. Once a bank leads, the rest of the field fills with faint ghost digits in that bank's length and grouping, for example `0180 4▢▢▢ ▢▢▢▢▢` for Equity. You see how many digits are left inside the number itself.
+- **Per-digit motion** (the essay's own example: "make transition per digit"):
+  - Each new digit springs in.
+  - A deleted digit lifts out before its ghost returns.
+  - Only the digit that changed moves. The rest stay still.
+- **A confirm moment:** when the name is confirmed, the caret goes away and a tick settles beside the number.
+
+**Why:** the number is what the customer checks against the piece of paper or message they hold. Making it carry its own progress removes one thing to read, and motion on just the changed digit shows exactly what the last tap did.
+
+## Round 8: depth on trust
+
+**Name what isn't working** (found in round 7's screenshots)
+- The bank row was rebuilt on every keystroke, so its entrance animation replayed 13 times while typing. It flickered.
+- "Likely · 83%" was precise but meaningless to most people: is 83% good?
+- The typo warning said "digits 12 and 13 are swapped", which made the customer hunt for them.
+- The name check was pass or fail, so "Grace Kamau" against "Grace Wanjiku" was treated the same as a stranger.
+
+**Reference the best:** the UK's Confirmation of Payee has four outcomes: match, close match (shows the real name), no match, and unavailable. It's the most mature public pattern for this exact decision.
+
+**Changed**
+- **The bank row persists and updates in place.**
+  - A confidence ring around the bank's logo fills as the evidence grows: grey, then amber, then green.
+  - The label is a word ("Unsure", "Possibly", "Likely"). The percentage moved into "Why?" for anyone who wants it.
+  - When the leading bank changes, only the logo turns over. Nothing else re-enters.
+- **Typos show where and fix themselves in view.**
+  - The wrong digits are highlighted in amber inside the number.
+  - Tapping "Pay Kevin instead" animates the fix: two swapped digits trade places, and a single wrong digit flips over. The customer watches their mistake being corrected, rather than seeing a different number appear.
+- **Three-tier name check.** This applies when a pasted message names the recipient.
+  - **Match:** every name in the message matches. Continue.
+  - **Close match:** some names match. The app shows the real account name and asks "Is that who you mean to pay?" Continue waits for "Yes, that's them".
+  - **No match:** blocks, with the advice to call on a number you already have and to stop if anyone says to ignore the warning.
+- The tick stays away while a warning is unresolved, so the number never looks "done" when it isn't.
+- The demo gained a third sample: "a close match".
+
+**Why**
+- Trust signals only work if they're calm. A flickering row reads as uncertainty.
+- A tiered check stops two failures: punishing people for nicknames and married names, and waving through the scam.
+
+## Where this sits on the 1–10 spectrum
+
+| Level | What it added | Round |
+|---|---|---|
+| 1 | Plain field, pick a bank from a list (the industry default) | — |
+| 2 | Digits grouped for reading | 1 |
+| 3 | Bank guessed live from the shape of the number | 1 |
+| 4 | Progress toward the bank's length | 1 |
+| 5 | Name confirmed through Pesalink before money moves | 1 |
+| 6 | Parallel checks, learning, typo guard, paste with scam check | 2–3 |
+| 7 | Typing becomes the fallback (range); ghost digits replace the meter | 6–7 |
+| 8 | Per-digit motion, confidence ring, calm persistent row | 7–8 |
+| 9 | Typo fixed in view, three-tier name check, honest confirm moment | 8 |
+| 10 | Not yet: scan to fill, bank-wide learning, a payee who never needs entering | Next |
+
 ## Honest limits
 
 - **The format table is a starting point** built from published numbers. Production needs a table maintained with IPSL and each bank, and must confirm every guess through Pesalink validation, as this flow does.
@@ -155,6 +217,8 @@ Rounds 1 to 5 went deep on one idea: type the number and we work out the bank. B
 - Hand off to RTGS above Pesalink's Ksh 999,999 limit.
 
 Sources:
+- [UK Finance: Confirmation of Payee](https://www.ukfinance.org.uk/policy-and-guidance/guidance/confirmation-payee)
+- Interface Craft, *Conceptual Range* and *Conceptual Depth* (supplied as attachments)
 - [KRA agent bank account details (published account numbers by bank)](https://eprocedures.investkenya.go.ke/media/KRA-Bank-Accounts-20052015.pdf)
 - [Co-op Bank: account numbers are 14 digits](https://x.com/Coopbankenya/status/1529915525681270789)
 - [Equity Bank: 13-digit account numbers](https://x.com/KeEquityBank/status/928856238867320832)

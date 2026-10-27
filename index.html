@@ -305,7 +305,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mint); outl
 .xf-meter i.gap { margin-left: 5px; }
 .xf-meter-lbl { text-align: center; font-size: 12px; color: var(--muted); min-height: 16px; margin-top: -4px; }
 
-.xf-detect { display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 16px; background: #F5F7F4; border: 1px solid var(--line); animation: popIn .3s ease; }
+.xf-detect { display: grid; grid-template-columns: 46px 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 16px; background: #F5F7F4; border: 1px solid var(--line); animation: popIn .3s ease; }
 .blogo { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 12px; letter-spacing: .02em; }
 .xf-detect b { font-size: 15px; display: block; }
 .xf-detect small { font-size: 12px; color: var(--muted); display: block; margin-top: 1px; }
@@ -369,8 +369,20 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mint); outl
 @keyframes digOut { to { transform: translateY(-40%) scale(.9); opacity: 0; filter: blur(3px); } }
 .xf-num .tick { display: none; margin-left: 8px; color: var(--g-ink); }
 .xf-num.locked .tick { display: inline-flex; animation: tickIn .35s cubic-bezier(.2,.9,.25,1.3); }
+.xf-num.locked.held .tick { display: none; }
 @keyframes tickIn { from { transform: scale(.3) rotate(-30deg); opacity: 0; } }
 .xf-num.locked .caret { display: none; }
+.ringwrap { position: relative; width: 46px; height: 46px; display: grid; place-items: center; }
+.ringwrap svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.ringwrap .trk { fill: none; stroke: #E3E7E2; stroke-width: 3; }
+.ringwrap .arc { fill: none; stroke-width: 3; stroke-linecap: round; transition: stroke-dashoffset .5s cubic-bezier(.2,.9,.25,1), stroke .3s; }
+.ringwrap .blogo { width: 36px; height: 36px; border-radius: 50%; font-size: 11px; }
+.blogo.swap { animation: logoSwap .34s cubic-bezier(.2,.9,.25,1.25); }
+@keyframes logoSwap { from { transform: scale(.55) rotate(-14deg); opacity: 0; } }
+.xf-num .s.bad { color: #C27400; background: #FFF1DC; border-radius: 5px; }
+.xf-num .s.fix { color: var(--g-ink); background: #E6F2E0; border-radius: 5px; }
+.xf-num .s.flip { animation: flip .34s ease; }
+@keyframes flip { 50% { transform: rotateX(90deg); } }
 .xf-text { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .xf-num.text { font-size: 26px; font-weight: 600; letter-spacing: -0.01em; }
 .xf-tools { display: flex; gap: 8px; justify-content: center; padding: 0 18px 6px; }
@@ -751,7 +763,7 @@ $("#sparkBtn").onclick = () => go(1);
 $("#edge").onclick = () => go(1);
 $("#toApp").onclick = () => go(0);
 document.addEventListener("keydown", (e) => {
-  const typing = e.target.matches("input, textarea");
+  const typing = !!(e.target.matches && e.target.matches("input, textarea"));
   if (e.key === "/" && !typing) { e.preventDefault(); go(1); setTimeout(() => $("#prompt").focus(), 380); }
   else if (e.key === "Escape") { if ($("#sheetWrap").classList.contains("open")) closeSheet(); else if (pos === 1 && !typing) go(0); else if (typing) e.target.blur(); }
   else if (!typing && e.key === "ArrowRight") go(1);
@@ -1348,6 +1360,7 @@ const PHONES = {
 };
 const SAMPLES = [
   "Hi Victor, kindly send the rent here 🙏\nName: Grace Wanjiku\nBank: Equity\nA/C: 0180 4417 23905\nAmount: 18,500",
+  "Hey, here are my details\nName: Grace Kamau\nEquity 0180 4417 23905\nAmount: 2,000",
   "URGENT: our account has changed, pay school fees to the new one.\nName: St. Mary's Academy\nKCB 1123457890\nAmount: 45,000",
 ];
 const SAVED = DIRECTORY.filter(e => e.saved).sort((a, b) => b.paid - a.paid);
@@ -1459,9 +1472,9 @@ function applyPaste(text) {
   const bits = [X.pasted.hint && BID.byId[X.pasted.hint].short, X.pasted.name && "name", X.pasted.amount && "amount"].filter(Boolean);
   toast(bits.length ? `Pasted · found ${bits.join(", ")} in the message` : "Pasted account number");
 }
-document.addEventListener("paste", (e) => { if (!$("#xfer").classList.contains("open") || $("#xamt").classList.contains("open")) return; if (e.target.matches("input")) return; e.preventDefault(); applyPaste(e.clipboardData.getData("text")); });
+document.addEventListener("paste", (e) => { if (!$("#xfer").classList.contains("open") || $("#xamt").classList.contains("open")) return; if (e.target.matches && e.target.matches("input")) return; e.preventDefault(); applyPaste(e.clipboardData.getData("text")); });
 document.addEventListener("keydown", (e) => {
-  if (!$("#xfer").classList.contains("open") || e.target.matches("input") || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (!$("#xfer").classList.contains("open") || (e.target.matches && e.target.matches("input")) || e.metaKey || e.ctrlKey || e.altKey) return;
   if ($("#picker").classList.contains("open") || $("#askSheet").classList.contains("open")) return;
   const amtOpen = $("#xamt").classList.contains("open");
   if (/^\d$/.test(e.key)) { e.preventDefault(); amtOpen ? amtKey(e.key) : key(e.key); }
@@ -1523,12 +1536,31 @@ function shapeFor(d) {
   if (!lead) return d.length;
   return lead.len.find(l => l >= d.length) || d.length;
 }
+function fixTarget() { if (X.state === "typo" && X.typo) return X.typo.entry.acct; if (X.res && X.res.near) return X.res.near.entry.acct; return null; }
+function diffIdx(a, b) { if (a.length !== b.length) return []; const o = []; for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) o.push(i); return o.length <= 2 ? o : []; }
+async function animateFix(from, to) {
+  const idx = diffIdx(from, to); const S = NUM.slots;
+  if (reduce || !idx.length || !S[idx[0]]) return;
+  if (idx.length === 2 && from[idx[0]] === to[idx[1]] && from[idx[1]] === to[idx[0]]) {
+    const A = S[idx[0]], B = S[idx[1]]; const dx = B.offsetLeft - A.offsetLeft;
+    for (const n of [A, B]) { n.classList.remove("bad", "in"); n.classList.add("fix"); n.style.transition = "transform .42s cubic-bezier(.2,.9,.25,1.15)"; }
+    A.style.transform = `translateX(${dx}px) translateY(-6px)`; B.style.transform = `translateX(${-dx}px) translateY(6px)`;
+    await wait(460);
+    for (const n of [A, B]) { n.style.transition = "none"; n.style.transform = ""; }
+    A.textContent = to[idx[0]]; B.textContent = to[idx[1]];
+  } else {
+    for (const i of idx) { const n = S[i]; n.classList.remove("bad", "in"); n.classList.add("fix", "flip"); setTimeout(() => { n.textContent = to[i]; }, 170); }
+    await wait(360);
+  }
+  await wait(220);
+}
 function bump(node, cls) { node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls); }
 function renderNumber(d) {
   const total = Math.max(d.length, shapeFor(d));
   const shaped = BID.format(d + "0".repeat(total - d.length));
   const layout = shaped.replace(/\d/g, "0");
   xNum.classList.toggle("locked", X.state === "resolved" && !X.editing);
+  xNum.classList.toggle("held", !!(X.res && (X.res.near || X.res.mismatch || X.res.close)));
   if (!d) { NUM.key = ""; NUM.slots = []; NUM.prevLen = 0; xNum.style.fontSize = ""; xNum.classList.add("empty"); xNum.innerHTML = `<span class="caret"></span>Enter account number`; return; }
   xNum.style.fontSize = (layout.length >= 18 ? 24 : layout.length >= 16 ? 27 : 32) + "px";
   if (NUM.key !== layout || !NUM.slots.length || !xNum.contains(NUM.slots[0])) {
@@ -1551,6 +1583,8 @@ function renderNumber(d) {
   }
   const last = NUM.slots[d.length - 1]; if (last) last.after(NUM.caret);
   NUM.prevLen = d.length;
+  const target = fixTarget(); const bad = target ? diffIdx(d, target) : [];
+  NUM.slots.forEach((sl, i) => sl.classList.toggle("bad", bad.includes(i)));
 }
 
 /* ----- Render ----- */
@@ -1571,36 +1605,53 @@ function render() {
   xNum.classList.toggle("editable", settled);
   if (settled) xMeterLbl.textContent = "Tap the number to edit";
   renderDetect(); renderResult(); renderMore();
-  const blocked = !!(X.res && (X.res.near || X.res.mismatch));
+  const blocked = !!(X.res && (X.res.near || X.res.mismatch || X.res.close));
   xCta.disabled = X.state !== "resolved" || blocked;
   xCta.textContent = blocked ? "Confirm the account first" : "Continue";
 }
 let lastSaid = null;
 const buzz = (p) => { try { navigator.vibrate?.(p); } catch {} };
 function confLabel(p) { return p >= 0.7 ? ["Likely", ""] : p >= 0.4 ? ["Possibly", "mid"] : ["Unsure", "low"]; }
+const RING_C = 2 * Math.PI * 21;
+const DET = { root: null };
+function ensureDet() {
+  if (DET.root && xDetect.contains(DET.root)) return DET;
+  xDetect.innerHTML = `<div class="xf-detect"><span class="ringwrap"><svg viewBox="0 0 46 46" aria-hidden="true"><circle class="trk" cx="23" cy="23" r="21"/><circle class="arc" cx="23" cy="23" r="21"/></svg><span class="blogo"></span></span><div style="min-width:0"><b></b><small></small></div><span class="conf"></span></div><div class="xf-alts"></div><div class="whyslot"></div>`;
+  const q = (sel) => xDetect.querySelector(sel);
+  Object.assign(DET, { root: q(".xf-detect"), arc: q(".arc"), logo: q(".blogo"), b: q(".xf-detect b"), small: q(".xf-detect small"), conf: q(".conf"), alts: q(".xf-alts"), why: q(".whyslot"), bank: null });
+  DET.arc.style.strokeDasharray = RING_C; DET.arc.style.strokeDashoffset = RING_C;
+  return DET;
+}
+function setDet(o) {
+  const D = ensureDet();
+  if (D.bank !== o.key) { D.logo.style.background = o.color; D.logo.innerHTML = o.logo; if (D.bank) bump(D.logo, "swap"); D.bank = o.key; }
+  D.b.textContent = o.title; D.small.textContent = o.sub;
+  D.conf.textContent = o.label; D.conf.className = "conf " + (o.cls || "");
+  D.arc.style.stroke = o.p >= 0.7 ? "#1F7A2E" : o.p >= 0.4 ? "#D08A1E" : "#9AA19A";
+  requestAnimationFrame(() => { D.arc.style.strokeDashoffset = RING_C * (1 - Math.max(0.04, o.p)); });
+  if (D.alts.innerHTML !== o.alts) D.alts.innerHTML = o.alts;
+  const why = o.why || ""; if (D.why.innerHTML !== why) D.why.innerHTML = why;
+}
 function renderDetect() {
   const d = X.d, inf = X.inf;
-  if (X.state === "resolved" || X.state === "phone" || X.state === "checking" || X.state === "typo" || X.state === "notfound") { xDetect.innerHTML = ""; return; }
-  if (d.length < 3 && !X.forced) { xDetect.innerHTML = ""; return; }
+  if (X.state === "resolved" || X.state === "phone" || X.state === "checking" || X.state === "typo" || X.state === "notfound") { xDetect.innerHTML = ""; DET.root = null; return; }
+  if (d.length < 3 && !X.forced) { xDetect.innerHTML = ""; DET.root = null; return; }
   if (X.forced) {
     const b = BID.byId[X.forced];
-    xDetect.innerHTML = `<div class="xf-detect">${BLOGO(b)}<div><b>${esc(b.name)}</b><small>You chose this bank</small></div><span class="conf">Chosen</span></div>
-      <div class="xf-alts"><button data-x="picker">Change bank</button></div>`;
-    return;
+    return setDet({ key: "f:" + b.id, logo: esc(b.init), color: b.color, title: b.name, sub: "You chose this bank", p: 1, label: "Chosen", alts: `<button data-x="picker">Change bank</button>` });
   }
-  const top = inf.top; if (!top) { xDetect.innerHTML = ""; return; }
+  const top = inf.top; if (!top) { xDetect.innerHTML = ""; DET.root = null; return; }
   if (top.bank.id === "phone") {
-    xDetect.innerHTML = `<div class="xf-detect"><span class="blogo" style="background:#2E8B3A">${IC.send}</span><div><b>Looks like a phone number</b><small>Pesalink finds their bank from the number</small></div><span class="conf">${Math.round(top.p * 100)}%</span></div>`;
-    return;
+    return setDet({ key: "phone", logo: IC.send, color: "#2E8B3A", title: "Looks like a phone number", sub: "Pesalink finds their bank from the number", p: top.p, label: confLabel(top.p)[0], cls: confLabel(top.p)[1], alts: "" });
   }
   const [lbl, cls] = confLabel(top.p);
   if (top.p >= 0.55 && lastSaid !== top.bank.id) { lastSaid = top.bank.id; say(`Looks like ${top.bank.name}`); buzz(6); }
   const isCoop = top.bank.id === "coop";
   const sub = isCoop ? "Within Co-op · free and instant" : top.learned || top.hinted ? top.reasons[0] : top.p >= 0.4 ? (top.match ? top.match.why + (top.match.fit < 1 ? " so far" : "") : top.reasons[0]) : "A few banks use this format";
   const alts = inf.all.filter(r => r !== top && r.p >= 0.06).slice(0, 3);
-  xDetect.innerHTML = `<div class="xf-detect">${BLOGO(top.bank)}<div><b>${top.p >= 0.4 ? esc(top.bank.name) : "Could be " + esc(top.bank.short)}</b><small>${esc(sub)}</small></div><span class="conf ${cls}">${lbl} · ${Math.round(top.p * 100)}%</span></div>
-    <div class="xf-alts">${alts.length ? "Or " + alts.map(a => `<button data-pick="${a.bank.id}">${esc(a.bank.short)} ${Math.round(a.p * 100)}%</button>`).join("") : ""}<button data-x="picker">Other bank</button><button class="why" data-x="why">${X.why ? "Hide" : "Why?"}</button></div>
-    ${X.why ? whyPanel() : ""}`;
+  setDet({ key: top.bank.id, logo: esc(top.bank.init), color: top.bank.color, title: top.p >= 0.4 ? top.bank.name : "Could be " + top.bank.short, sub, p: top.p, label: lbl, cls,
+    alts: `${alts.length ? "Or " + alts.map(a => `<button data-pick="${a.bank.id}">${esc(a.bank.short)}</button>`).join("") : ""}<button data-x="picker">Other bank</button><button class="why" data-x="why">${X.why ? "Hide" : "Why?"}</button>`,
+    why: X.why ? whyPanel() : "" });
 }
 function whyPanel() {
   const inf = X.inf, top = inf.top;
@@ -1624,9 +1675,10 @@ function renderResult() {
       ${misses.length ? `<div class="xf-tip" style="text-align:left">Not ${misses.map(m => esc(m.bank.short)).join(" or ")}, so we checked the next likely bank. Numbers starting ${esc(r.acct.slice(0, 4))} will go to ${esc(r.bank.short)} first from now on.</div>` : ""}
       ${r.bank.id === "coop" ? `<div class="xf-tip" style="text-align:left;color:var(--g-ink)">They bank with Co-op, so this is free and instant.</div>` : ""}
       ${r.near ? `<div class="xf-warn">${IC.warn}<span>This is one digit away from <b>${esc(r.near.entry.name)}</b>'s account you've paid ${r.near.entry.paid} times (${esc(r.near.slip)}). It belongs to someone else. Check before you continue.</span></div><div class="xf-actions"><button class="pri" data-use="${r.near.entry.acct}">Pay ${esc(r.near.entry.name.split(" ")[0])} instead</button><button data-x="keep">It's correct</button></div>` : ""}
-      ${r.nameMatch ? `<div class="xf-ok">${ICON_OK}Matches the name in the message (${esc(r.nameMatch)})</div>` : ""}
-      ${r.mismatch ? `<div class="xf-warn">${IC.warn}<span>The message says <b>${esc(r.mismatch)}</b>, but this account belongs to <b>${esc(r.name)}</b>. Scammers often send "updated" bank details. Check with the person on a call before paying.</span></div><div class="xf-actions"><button data-x="keepmm">I've checked, it's correct</button><button data-x="clear">Clear number</button></div>` : ""}
-      ${r.firstTime && !r.near && !r.mismatch && !r.nameMatch ? `<div class="xf-tip" style="text-align:left">First payment to this account. Make sure the name is who you expect.</div>` : ""}</div>`;
+      ${r.nameMatch ? `<div class="xf-ok">${ICON_OK}${r.closeOk ? "You confirmed this is " + esc(r.name.split(" ")[0]) : "Matches the name in the message (" + esc(r.nameMatch) + ")"}</div>` : ""}
+      ${r.close ? `<div class="xf-warn">${IC.warn}<span><b>Close match.</b> The message says ${esc(r.close)}, but the account is in the name of <b>${esc(r.name)}</b>. Is that who you mean to pay?</span></div><div class="xf-actions"><button class="pri" data-x="keepclose">Yes, that's them</button><button data-x="clear">Clear number</button></div>` : ""}
+      ${r.mismatch ? `<div class="xf-warn">${IC.warn}<span><b>Name doesn't match.</b> The message says ${esc(r.mismatch)}, but this account belongs to <b>${esc(r.name)}</b>. Scammers often send "updated" bank details. Call the person on a number you already have before paying, and don't continue if anyone tells you to ignore this.</span></div><div class="xf-actions"><button data-x="keepmm">I've checked, it's correct</button><button class="pri" data-x="clear">Clear number</button></div>` : ""}
+      ${r.firstTime && !r.near && !r.mismatch && !r.nameMatch && !r.close ? `<div class="xf-tip" style="text-align:left">First payment to this account. Make sure the name is who you expect.</div>` : ""}</div>`;
     return;
   }
   if (X.state === "phone") {
@@ -1656,7 +1708,7 @@ function renderMore() {
   if (!d) {
     xMore.innerHTML = `<div class="xf-sec">Recent</div><div class="xf-recents">${SAVED.map(e => `<button class="xf-recent" data-use="${e.acct}"><span class="av" style="background:${e.color}">${esc(initialsOf(e.name))}</span><span>${esc(e.name.split(" ")[0])}<small>${esc(BID.byId[e.bank].short)}</small></span></button>`).join("")}</div>
       <p class="xf-tip">Type or paste an account number. We'll work out the bank and confirm the name, so there's no bank list to scroll.</p>
-      <div class="xf-alts" style="justify-content:center">Try pasting <button data-x="sample" data-n="0">a rent message</button><button data-x="sample" data-n="1">a suspicious one</button></div>`;
+      <div class="xf-alts" style="justify-content:center">Try pasting <button data-x="sample" data-n="0">a rent message</button><button data-x="sample" data-n="1">a close match</button><button data-x="sample" data-n="2">a suspicious one</button></div>`;
     return;
   }
   const hits = d.length >= 2 ? SAVED.filter(e => e.acct.startsWith(d)).slice(0, 3) : [];
@@ -1673,9 +1725,13 @@ async function resolve() {
     if (ctl.signal.aborted) return;
     if (res.res && X.viaLink) res.res.viaLink = true;
     if (res.res && X.pasted && X.pasted.name && !X.viaLink) {
-      const words = (n) => n.toLowerCase().split(/[\s.'-]+/).filter(w => w.length > 1);
-      const a = words(X.pasted.name), b = words(res.res.name);
-      if (a.some(w => b.includes(w))) res.res.nameMatch = X.pasted.name; else res.res.mismatch = X.pasted.name;
+      const toks = (n) => n.toLowerCase().replace(/[^a-z\s.'-]/g, " ").split(/[\s.'-]+/).filter(Boolean);
+      const a = toks(X.pasted.name), b = toks(res.res.name);
+      const hit = (w) => b.some(x => x === w || (w.length === 1 && x[0] === w));
+      const n = a.filter(hit).length;
+      if (a.length && n === a.length) res.res.nameMatch = X.pasted.name;
+      else if (n > 0) res.res.close = X.pasted.name;
+      else res.res.mismatch = X.pasted.name;
     }
     Object.assign(X, res); render();
   };
@@ -1727,7 +1783,12 @@ $("#xfer").addEventListener("click", (e) => {
     X.state = "resolved"; X.res = { name: p.name, acct: p.coop || "", bank: BID.byId.coop, color: p.color, source: "tag", tag: p.tag }; render(); say(`${p.name}, Co-op tag ${p.tag}. Free.`); return;
   }
   if (t.dataset.pick) { X.forced = t.dataset.pick; setDigits(X.d, { keepForced: true, source: "paste" }); }
-  if (t.dataset.use) { X.forced = null; X.pasted = null; X.viaLink = null; xText.blur(); setDigits(t.dataset.use, { source: "paste" }); }
+  if (t.dataset.use) {
+    const to = t.dataset.use; const fixing = fixTarget() === to;
+    X.forced = null; X.pasted = null; X.viaLink = null; xText.blur();
+    if (fixing) { animateFix(X.d, to).then(() => setDigits(to, { source: "paste" })); return; }
+    setDigits(to, { source: "paste" });
+  }
   if (t.dataset.phonebank) {
     const p = PHONES[X.d] || { name: "Account holder" }; const b = BID.byId[t.dataset.phonebank];
     X.state = "resolved"; X.res = { name: p.name, acct: X.d, bank: b, color: p.color || colorOf(p.name), source: "pesalink", viaPhone: true, firstTime: true };
@@ -1739,6 +1800,7 @@ $("#xfer").addEventListener("click", (e) => {
   if (x === "clear") setDigits("");
   if (x === "keep") { X.res.near = null; render(); }
   if (x === "keepmm") { X.res.mismatch = null; render(); }
+  if (x === "keepclose") { X.res.nameMatch = X.res.close; X.res.close = null; X.res.closeOk = true; render(); }
   if (x === "sample") applyPaste(SAMPLES[+t.dataset.n]);
   if (x === "numpad") exitText();
   if (x === "paste") pasteFromClipboard();
