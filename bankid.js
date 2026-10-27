@@ -152,11 +152,18 @@
     const rows = [];
     for (const b of BANKS.concat([PHONE])) {
       const s = scoreBank(b, d); if (!s || s.raw <= 0) continue;
-      if (opts.hint && b.id === opts.hint) s.raw *= 25;
+      if (opts.hint && b.id === opts.hint) { s.raw *= 25; s.hinted = true; }
+      const lk = opts.learned && learnedKey(d, b);
+      const seen = lk && opts.learned[lk] && opts.learned[lk][b.id];
+      if (seen) { s.raw *= 100; s.learned = seen; }
       rows.push(s);
     }
     const total = rows.reduce((a, r) => a + r.raw, 0) || 1;
-    for (const r of rows) { r.p = r.raw / total; r.reasons = reasonsFor(r, d); }
+    for (const r of rows) {
+      r.p = r.raw / total; r.reasons = reasonsFor(r, d);
+      if (r.learned) r.reasons.unshift(`${r.bank.short} confirmed a number starting ${d.slice(0, 4)} before`);
+      if (r.hinted) r.reasons.unshift(`${r.bank.short} is named in what you pasted`);
+    }
     rows.sort((a, b) => b.p - a.p);
     const phone = rows.find(r => r.bank.id === "phone") || null;
     const banks = rows.filter(r => r.bank.id !== "phone");
@@ -164,9 +171,19 @@
     return { digits: d, candidates: banks, all: rows, top, phone, expected: top ? top.expected : null, tooLong: d.length > MAX_LEN };
   }
 
+  // Learned shapes are keyed on the first 4 digits + the bank's length, so one
+  // confirmed transfer teaches the engine about that bank's branch prefix.
+  function learnedKey(d, b) { return d.length >= 4 && b ? d.slice(0, 4) + ":" + (b.len.find(l => l >= d.length) || "") : null; }
+  function learn(table, d, bankId) {
+    const b = byId[bankId]; if (!b || d.length < 4) return table;
+    const k = d.slice(0, 4) + ":" + d.length; const row = table[k] = table[k] || {}; row[bankId] = (row[bankId] || 0) + 1; return table;
+  }
+
   // Group digits for reading: 4s, never leaving a single digit on its own.
+  // Kenyan mobile numbers read 0723 542 388.
   function format(input) {
     const d = clean(input); const g = [];
+    if (/^0[71]\d{8}$/.test(d)) return d.replace(/^(\d{4})(\d{3})(\d{3})$/, "$1 $2 $3");
     for (let i = 0; i < d.length; i += 4) g.push(d.slice(i, i + 4));
     if (g.length > 1 && g[g.length - 1].length === 1) { const last = g.pop(); g[g.length - 1] += last; }
     return g.join(" ");
@@ -199,7 +216,7 @@
     return best;
   }
 
-  const api = { BANKS, PHONE, byId, MAX_LEN, clean, infer, format, editDistance, nearMiss, describeSlip, hintFrom, prefixFit };
+  const api = { BANKS, PHONE, byId, MAX_LEN, clean, infer, format, editDistance, nearMiss, describeSlip, hintFrom, prefixFit, learn, learnedKey };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.BankID = api;
 })(typeof window !== "undefined" ? window : globalThis);

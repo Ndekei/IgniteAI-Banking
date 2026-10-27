@@ -573,7 +573,7 @@ const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const wait = (ms) => new Promise(r => setTimeout(r, reduce ? Math.min(ms, 60) : ms));
 const fmt = (n) => "Ksh " + Number(n).toLocaleString("en-KE", { maximumFractionDigits: 2 });
 const fmt2 = (n) => Number(n).toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const group4 = (d) => String(d).replace(/\D/g, "").replace(/(\d{4})(?=\d)/g, "$1 ");
+const group4 = (d) => window.BankID ? window.BankID.format(d) : String(d).replace(/\D/g, "").replace(/(\d{4})(?=\d)/g, "$1 ");
 const phoneFmt = (d) => { d = String(d).replace(/\D/g, "").replace(/^254/, "0"); return d.replace(/^(\d{4})(\d{3})(\d{3})$/, "$1 $2 $3"); };
 
 /* ---------- Icons ---------- */
@@ -1072,8 +1072,9 @@ async function faceId() {
 }
 
 /* ---------- Sheet (AI → app handoff) ---------- */
-function openSheet(intent) {
+function openSheet(intent, subtitle) {
   go(0, { focus: false });
+  $(".sheet-h small").textContent = subtitle || "Lined up by Co-op AI";
   const body = $("#sheetBody"); body.innerHTML = "";
   body.appendChild(buildCard(intent, { inSheet: true }));
   setTimeout(() => $("#sheetWrap").classList.add("open"), 300);
@@ -1329,6 +1330,9 @@ async function validate(d, bankId, signal) {
   return { ok: false };
 }
 
+let LEARNED = {}; try { LEARNED = JSON.parse(localStorage.getItem("bid.learned") || "{}"); } catch {}
+const saveLearned = () => { try { localStorage.setItem("bid.learned", JSON.stringify(LEARNED)); } catch {} };
+const article = (w) => /^(A|E|I|O|U|NCBA|HFC|I&M)/.test(w) ? "an" : "a";
 const X = { d: "", inf: null, state: "idle", res: null, forced: null, why: false, timer: 0, ctl: null, openedAt: 0, pasted: null };
 const xNum = $("#xfNum"), xMeter = $("#xfMeter"), xMeterLbl = $("#xfMeterLbl"), xDetect = $("#xfDetect"), xResult = $("#xfResult"), xMore = $("#xfMore"), xCta = $("#xfCta");
 const BLOGO = (b, size = 40) => `<span class="blogo" style="background:${b.color};width:${size}px;height:${size}px">${esc(b.init)}</span>`;
@@ -1365,11 +1369,14 @@ function setDigits(d, opts = {}) {
   const changed = d !== X.d;
   X.d = d;
   if (changed || opts.source === "reset") { X.ctl?.abort(); X.res = null; X.state = "typing"; if (opts.source !== "paste") X.pasted = null; if (opts.keepForced !== true) X.forced = null; }
-  X.inf = BID.infer(d, { hint: X.pasted && X.pasted.hint });
+  X.inf = BID.infer(d, { hint: X.pasted && X.pasted.hint, learned: LEARNED });
   render();
   clearTimeout(X.timer);
   if (!d) return;
-  if (readyToResolve()) X.timer = setTimeout(resolve, opts.source === "paste" ? 0 : 650);
+  if (readyToResolve()) {
+    const longer = X.inf.all.some(r => !r.complete && r.p >= 0.08);
+    X.timer = setTimeout(resolve, opts.source === "paste" ? 0 : longer ? 650 : 150);
+  }
 }
 function readyToResolve() {
   const d = X.d; if (d.length < 8) return false;
@@ -1419,14 +1426,15 @@ function render() {
   const exp = lead && d.length >= 3 ? Math.max(lead.expected, d.length) : 0;
   xMeter.innerHTML = exp ? Array.from({ length: exp }, (_, i) => `<i class="${i < d.length ? "on" : ""}${i && i % 4 === 0 ? " gap" : ""}"></i>`).join("") : "";
   const left = exp - d.length;
-  xMeterLbl.textContent = !exp ? "" : left > 0 ? `${left} more digit${left > 1 ? "s" : ""} for ${lead.bank.id === "phone" ? "a phone number" : "a " + lead.bank.short + " account"}` : `${d.length} digits`;
+  xMeterLbl.textContent = !exp ? "" : left > 0 ? `${left} more digit${left > 1 ? "s" : ""} for ${lead.bank.id === "phone" ? "a phone number" : article(lead.bank.short) + " " + lead.bank.short + " account"}` : `${d.length} digits`;
   renderDetect(); renderResult(); renderMore();
-  xCta.disabled = X.state !== "resolved";
+  xCta.disabled = X.state !== "resolved" || !!(X.res && X.res.near);
+  xCta.textContent = X.res && X.res.near ? "Confirm the account first" : "Continue";
 }
 function confLabel(p) { return p >= 0.7 ? ["Likely", ""] : p >= 0.4 ? ["Possibly", "mid"] : ["Unsure", "low"]; }
 function renderDetect() {
   const d = X.d, inf = X.inf;
-  if (X.state === "resolved" || X.state === "phone") { xDetect.innerHTML = ""; return; }
+  if (X.state === "resolved" || X.state === "phone" || X.state === "checking" || X.state === "typo" || X.state === "notfound") { xDetect.innerHTML = ""; return; }
   if (d.length < 3 && !X.forced) { xDetect.innerHTML = ""; return; }
   if (X.forced) {
     const b = BID.byId[X.forced];
@@ -1441,7 +1449,7 @@ function renderDetect() {
   }
   const [lbl, cls] = confLabel(top.p);
   const isCoop = top.bank.id === "coop";
-  const sub = isCoop ? "Within Co-op · free and instant" : top.p >= 0.4 ? `${top.reasons[0]}` : "A few banks use this format";
+  const sub = isCoop ? "Within Co-op · free and instant" : top.learned || top.hinted ? top.reasons[0] : top.p >= 0.4 ? (top.match ? top.match.why + (top.match.fit < 1 ? " so far" : "") : top.reasons[0]) : "A few banks use this format";
   const alts = inf.all.filter(r => r !== top && r.p >= 0.06).slice(0, 3);
   xDetect.innerHTML = `<div class="xf-detect">${BLOGO(top.bank)}<div><b>${top.p >= 0.4 ? esc(top.bank.name) : "Could be " + esc(top.bank.short)}</b><small>${esc(sub)}</small></div><span class="conf ${cls}">${lbl} · ${Math.round(top.p * 100)}%</span></div>
     <div class="xf-alts">${alts.length ? "Or " + alts.map(a => `<button data-pick="${a.bank.id}">${esc(a.bank.short)} ${Math.round(a.p * 100)}%</button>`).join("") : ""}<button data-x="picker">Other bank</button><button class="why" data-x="why">${X.why ? "Hide" : "Why?"}</button></div>
@@ -1466,7 +1474,7 @@ function renderResult() {
     const misses = (r.checked || []).filter(s => s.st === "x");
     const viaLine = r.source === "saved" ? `Saved payee · paid ${r.entry.paid} times` : r.source === "internal" ? "Co-op customer · confirmed instantly" : `Name confirmed by ${r.bank.short} through Pesalink`;
     xResult.innerHTML = `<div class="xf-card">${recCard(r)}<div class="xf-ok">${ICON_OK}${esc(viaLine)}</div>
-      ${misses.length ? `<div class="xf-tip" style="text-align:left">Not ${misses.map(m => esc(m.bank.short)).join(" or ")}. Found at ${esc(r.bank.short)} on the next check.</div>` : ""}
+      ${misses.length ? `<div class="xf-tip" style="text-align:left">Not ${misses.map(m => esc(m.bank.short)).join(" or ")}, so we checked the next likely bank. Numbers starting ${esc(r.acct.slice(0, 4))} will go to ${esc(r.bank.short)} first from now on.</div>` : ""}
       ${r.bank.id === "coop" ? `<div class="xf-tip" style="text-align:left;color:var(--g-ink)">They bank with Co-op, so this is free and instant.</div>` : ""}
       ${r.near ? `<div class="xf-warn">${IC.warn}<span>This is one digit away from <b>${esc(r.near.entry.name)}</b>'s account you've paid ${r.near.entry.paid} times (${esc(r.near.slip)}). It belongs to someone else. Check before you continue.</span></div><div class="xf-actions"><button class="pri" data-use="${r.near.entry.acct}">Pay ${esc(r.near.entry.name.split(" ")[0])} instead</button><button data-x="keep">It's correct</button></div>` : ""}
       ${r.firstTime && !r.near ? `<div class="xf-tip" style="text-align:left">First payment to this account. Make sure the name is who you expect.</div>` : ""}</div>`;
@@ -1526,12 +1534,16 @@ async function resolve() {
   let list = X.forced ? [BID.byId[X.forced]] : inf.candidates.filter(c => c.complete && c.p >= 0.02).slice(0, 4).map(c => c.bank);
   if (!list.length) return;
   X.steps = []; X.state = "checking";
-  for (const b of list) {
+  const guess = X.forced ? null : (inf.candidates[0] && inf.candidates[0].bank.id);
+  const pending = list.map(b => validate(d, b.id, ctl.signal).catch(() => null)); // ask every likely bank at once
+  for (let i = 0; i < list.length; i++) {
+    const b = list[i];
     X.steps.push({ bank: b, st: "wait" }); render(); say(`Checking with ${b.name}`);
-    let r; try { r = await validate(d, b.id, ctl.signal); } catch { return; }
-    if (ctl.signal.aborted) return;
+    const r = await pending[i];
+    if (!r || ctl.signal.aborted) return;
     const step = X.steps[X.steps.length - 1];
     if (r.ok) {
+      if (b.id !== guess) { BID.learn(LEARNED, d, b.id); saveLearned(); step.note = "remembered for next time"; }
       step.st = "ok";
       const entry = r.entry;
       const near = BID.nearMiss(d, SAVED);
@@ -1625,7 +1637,7 @@ function amtKey(k) {
 drawPad($("#xaPad"), ["1", "2", "3", "4", "5", "6", "7", "8", "9", "00", "0", "del"], amtKey);
 $("#xaQuick").addEventListener("click", (e) => { const b = e.target.closest("[data-q]"); if (b) { XA.v = b.dataset.q; drawAmt(); } });
 $("#xaFrom").onclick = () => { const ids = ["current", "savings", "salary"]; XA.from = ids[(ids.indexOf(XA.from) + 1) % ids.length]; drawAmt(); };
-$("#xaCta").onclick = () => openSheet(amtIntent());
+$("#xaCta").onclick = () => openSheet(amtIntent(), `Bank transfer · name confirmed by ${X.res.bank.short}`);
 
 /* ---------- Boot ---------- */
 function reset() {

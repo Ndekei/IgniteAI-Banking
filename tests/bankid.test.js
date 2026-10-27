@@ -37,6 +37,12 @@ t("nearMiss swap", nm && /swapped/.test(nm.slip), nm && nm.slip);
 t("nearMiss sub", /different/.test(B.nearMiss("0030512788419", [{ acct: "0030512788410" }]).slip));
 t("nearMiss none for far", B.nearMiss("1123457890", [{ acct: "0030512788410" }]) === null);
 
+// Learning: one confirmed transfer moves a GTBank-shaped number above KCB
+const L = B.learn({}, "1145678902", "gtb");
+t("before learning KCB leads", top("1145678902") === "kcb");
+t("after learning GTBank leads", top("1145678902", { learned: L }) === "gtb", JSON.stringify(L));
+t("learning generalises to same branch prefix", top("1145111111", { learned: L }) === "gtb");
+t("phone format", B.format("0723542388") === "0723 542 388", B.format("0723542388"));
 console.log(`\n${pass} passed, ${fail} failed`);
 console.log("\nConfidence by digits typed for an Equity number:");
 const eq = "0180441723905"; let line = "";
