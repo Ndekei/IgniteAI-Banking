@@ -278,6 +278,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mint); outl
 
 .toast { position: absolute; left: 50%; top: 62px; z-index: 55; transform: translate(-50%, -20px); opacity: 0; background: #121614; color: #fff; padding: 10px 14px; border-radius: 14px; font-size: 13px; font-weight: 550; box-shadow: 0 10px 30px -10px rgba(0,0,0,.5); transition: opacity .3s, transform .3s; pointer-events: none; white-space: nowrap; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
+.screen.in-xfer .toast { top: auto; bottom: 400px; }
 
 /* ---------- Narrow screens: the phone is the page ---------- */
 /* ---------- Bank transfer (native flow) ---------- */
@@ -1369,14 +1370,14 @@ function drawPad(box, keys, onKey) {
 }
 
 function openXfer(prefill) {
-  const xf = $("#xfer"); xf.inert = false; xf.classList.add("open"); X.openedAt = Date.now();
+  const xf = $("#xfer"); xf.inert = false; xf.classList.add("open"); X.openedAt = Date.now(); lastSaid = null; screen.classList.add("in-xfer");
   $("#appPane").querySelector(".tabbar").inert = true;
   setDigits(prefill || "", { source: "reset" });
 }
 function closeXfer() {
   X.ctl?.abort(); clearTimeout(X.timer);
   for (const id of ["#xamt", "#xfer"]) { const s = $(id); s.classList.remove("open"); s.inert = true; }
-  $("#appPane").querySelector(".tabbar").inert = false;
+  $("#appPane").querySelector(".tabbar").inert = false; screen.classList.remove("in-xfer");
   closePicker();
 }
 $("#xfBack").onclick = closeXfer;
@@ -1453,6 +1454,8 @@ function render() {
   xCta.disabled = X.state !== "resolved" || blocked;
   xCta.textContent = blocked ? "Confirm the account first" : "Continue";
 }
+let lastSaid = null;
+const buzz = (p) => { try { navigator.vibrate?.(p); } catch {} };
 function confLabel(p) { return p >= 0.7 ? ["Likely", ""] : p >= 0.4 ? ["Possibly", "mid"] : ["Unsure", "low"]; }
 function renderDetect() {
   const d = X.d, inf = X.inf;
@@ -1470,6 +1473,7 @@ function renderDetect() {
     return;
   }
   const [lbl, cls] = confLabel(top.p);
+  if (top.p >= 0.55 && lastSaid !== top.bank.id) { lastSaid = top.bank.id; say(`Looks like ${top.bank.name}`); buzz(6); }
   const isCoop = top.bank.id === "coop";
   const sub = isCoop ? "Within Co-op · free and instant" : top.learned || top.hinted ? top.reasons[0] : top.p >= 0.4 ? (top.match ? top.match.why + (top.match.fit < 1 ? " so far" : "") : top.reasons[0]) : "A few banks use this format";
   const alts = inf.all.filter(r => r !== top && r.p >= 0.06).slice(0, 3);
@@ -1581,13 +1585,13 @@ async function resolve() {
       const entry = r.entry;
       const near = BID.nearMiss(d, SAVED);
       done({ state: "resolved", res: { name: r.name, acct: d, bank: b, color: entry && entry.color || colorOf(r.name), source: "pesalink", checked: X.steps.slice(), near: near && near.entry.name !== r.name ? near : null, firstTime: !(entry && entry.saved) } });
-      say(`${r.name}, ${b.name}. Name confirmed.`); return;
+      say(`${r.name}, ${b.name}. Name confirmed.`); buzz(X.res && (X.res.near || X.res.mismatch) ? [10, 60, 10] : 14); return;
     }
     step.st = "x";
   }
   const names = X.steps.map(s => s.bank.short).join(", ").replace(/, ([^,]*)$/, " or $1");
   const nm = BID.nearMiss(d, DIRECTORY.filter(e => e.saved).concat(DIRECTORY.filter(e => !e.saved)));
-  if (nm) { done({ state: "typo", typo: nm, checkedNames: names }); say(`No account found. Did you mean ${nm.entry.name}?`); return; }
+  if (nm) { done({ state: "typo", typo: nm, checkedNames: names }); say(`No account found. Did you mean ${nm.entry.name}?`); buzz([10, 60, 10]); return; }
   done({ state: "notfound", checkedNames: names }); say("No account found.");
 }
 
@@ -1610,6 +1614,15 @@ $("#xfer").addEventListener("click", (e) => {
   if (x === "sample") applyPaste(SAMPLES[+t.dataset.n]);
   if (x === "mpesa") { closeXfer(); go(1); setTimeout(() => submit(`Send to ${X.d}`), 380); }
 });
+
+/* ----- Swipe from the left edge to go back ----- */
+for (const [id, close] of [["#xfer", () => closeXfer()], ["#xamt", () => closeAmt()]]) {
+  const pane = $(id); let sw = null;
+  pane.addEventListener("pointerdown", (e) => { const r = pane.getBoundingClientRect(); if (e.clientX - r.left > 28 || e.target.closest("button, input")) return; sw = { x: e.clientX, w: r.width, id: e.pointerId }; pane.setPointerCapture(e.pointerId); pane.style.transition = "none"; });
+  pane.addEventListener("pointermove", (e) => { if (!sw || e.pointerId !== sw.id) return; const dx = Math.max(0, e.clientX - sw.x); pane.style.transform = `translateX(${dx}px)`; });
+  const end = (e) => { if (!sw) return; const dx = Math.max(0, e.clientX - sw.x); pane.style.transition = ""; pane.style.transform = ""; if (dx > sw.w * 0.33) close(); sw = null; };
+  pane.addEventListener("pointerup", end); pane.addEventListener("pointercancel", end);
+}
 
 /* ----- Bank picker: likely banks first ----- */
 function openPicker() {
