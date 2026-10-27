@@ -280,6 +280,123 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mint); outl
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 /* ---------- Narrow screens: the phone is the page ---------- */
+/* ---------- Bank transfer (native flow) ---------- */
+.xfer, .xamt { position: absolute; inset: 0; z-index: 20; background: #fff; color: var(--ink); display: flex; flex-direction: column; transform: translateX(104%); transition: transform .42s cubic-bezier(.2,.9,.25,1); box-shadow: -20px 0 40px -20px rgba(0,0,0,.25); }
+.xamt { z-index: 21; }
+.xfer.open, .xamt.open { transform: none; }
+.xf-head { padding: 58px 16px 4px; display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; }
+.xf-back { width: 44px; height: 44px; border-radius: 50%; background: #F2F3F1; display: grid; place-items: center; }
+.xf-title { text-align: center; font-weight: 600; font-size: 17px; letter-spacing: -0.01em; }
+.xf-body { flex: 1; min-height: 0; overflow-y: auto; padding: 6px 18px 8px; display: flex; flex-direction: column; gap: 12px; scrollbar-width: none; }
+.xf-body::-webkit-scrollbar { display: none; }
+.xf-field { display: grid; justify-items: center; gap: 6px; padding-top: 6px; }
+.xf-label { font-size: 13px; color: var(--muted); }
+.xf-num { font-size: 32px; font-weight: 650; letter-spacing: -0.01em; min-height: 42px; display: flex; align-items: center; font-variant-numeric: tabular-nums; white-space: nowrap; max-width: 100%; }
+.xf-num.empty { font-size: 20px; font-weight: 500; color: #B9BEB8; letter-spacing: 0; }
+.xf-num .caret { display: inline-block; width: 2px; height: 34px; margin-left: 2px; background: var(--g-ink); animation: caret 1s steps(1) infinite; }
+.xf-num.empty .caret { height: 24px; margin: 0 4px 0 0; }
+@keyframes caret { 50% { opacity: 0; } }
+.xf-num.shake { animation: shake .32s; }
+@keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+.xf-meter { display: flex; gap: 3px; justify-content: center; min-height: 6px; }
+.xf-meter i { width: 6px; height: 6px; border-radius: 3px; background: #E3E7E2; transition: background .2s, transform .2s; }
+.xf-meter i.on { background: var(--g-ink); }
+.xf-meter i.gap { margin-left: 5px; }
+.xf-meter-lbl { text-align: center; font-size: 12px; color: var(--muted); min-height: 16px; margin-top: -4px; }
+
+.xf-detect { display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 16px; background: #F5F7F4; border: 1px solid var(--line); animation: popIn .3s ease; }
+.blogo { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 12px; letter-spacing: .02em; }
+.xf-detect b { font-size: 15px; display: block; }
+.xf-detect small { font-size: 12px; color: var(--muted); display: block; margin-top: 1px; }
+.conf { font-size: 11px; font-weight: 650; padding: 4px 8px; border-radius: 10px; background: #E6F2E0; color: var(--g-ink); white-space: nowrap; }
+.conf.mid { background: #FFF1DC; color: #9A5A00; }
+.conf.low { background: #ECEEEB; color: #4F564F; }
+.xf-alts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
+.xf-alts button { padding: 6px 10px; border-radius: 12px; background: #fff; border: 1px solid var(--line); font-size: 12px; font-weight: 600; color: var(--ink); }
+.xf-alts .why { border: 0; background: none; color: var(--g-ink); padding: 6px 2px; }
+.xf-why { font-size: 12.5px; line-height: 1.5; color: #3F463F; background: #F8FAF7; border-radius: 14px; padding: 10px 12px; display: grid; gap: 4px; }
+.xf-why li { margin-left: 16px; }
+.xf-why ul { margin: 0; padding: 0; }
+.xf-why .bar { display: grid; grid-template-columns: 70px 1fr 34px; gap: 8px; align-items: center; }
+.xf-why .bar span:nth-child(2) { height: 6px; border-radius: 3px; background: #E3E7E2; overflow: hidden; }
+.xf-why .bar span:nth-child(2) i { display: block; height: 100%; background: var(--g-ink); }
+
+.xf-card { border: 1px solid var(--line); border-radius: 18px; padding: 12px; display: grid; gap: 10px; animation: popIn .3s ease; background: #fff; }
+.xf-rec { display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: center; }
+.xf-rec .av { position: relative; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 650; font-size: 14px; }
+.xf-rec .av .bdg { position: absolute; right: -4px; bottom: -4px; width: 20px; height: 20px; border-radius: 7px; border: 2px solid #fff; display: grid; place-items: center; color: #fff; font-size: 7px; font-weight: 800; }
+.xf-rec b { font-size: 16px; display: flex; align-items: center; gap: 6px; }
+.xf-rec b svg { color: var(--g-ink); }
+.xf-rec small { font-size: 12.5px; color: var(--muted); display: block; margin-top: 1px; }
+.xf-ok { font-size: 12px; color: var(--g-ink); display: flex; gap: 6px; align-items: center; font-weight: 550; }
+.xf-steps { display: grid; gap: 6px; font-size: 13px; }
+.xf-steps div { display: flex; align-items: center; gap: 8px; }
+.xf-steps .x { color: #B4620B; }
+.xf-steps .ok { color: var(--g-ink); }
+.xf-steps .wait { color: var(--muted); }
+.xf-warn { display: grid; grid-template-columns: 18px 1fr; gap: 8px; padding: 10px 12px; border-radius: 12px; background: #FFF4E5; color: #5A3A00; font-size: 13px; line-height: 1.4; }
+.xf-warn svg { color: #C27400; margin-top: 1px; }
+.xf-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.xf-actions button { padding: 9px 12px; border-radius: 12px; font-size: 13px; font-weight: 600; background: #F2F3F1; }
+.xf-actions button.pri { background: var(--g-ink); color: #fff; }
+.xf-opt { display: grid; grid-template-columns: 36px 1fr auto; gap: 10px; align-items: center; text-align: left; padding: 10px; border-radius: 14px; border: 1px solid var(--line); width: 100%; }
+.xf-opt:hover { border-color: var(--g-ink); }
+.xf-opt b { font-size: 14px; display: block; }
+.xf-opt small { font-size: 12px; color: var(--muted); }
+.xf-opt .fee { font-size: 12px; font-weight: 650; color: var(--g-ink); }
+.xf-sec { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .02em; }
+.xf-sug { display: grid; grid-template-columns: 38px 1fr auto; gap: 10px; align-items: center; padding: 8px 4px; text-align: left; width: 100%; border-bottom: 1px solid var(--line); }
+.xf-sug:last-child { border-bottom: 0; }
+.xf-sug .av { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 12px; font-weight: 650; }
+.xf-sug b { font-size: 14px; display: block; }
+.xf-sug small { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.xf-sug small em { font-style: normal; color: var(--ink); font-weight: 650; background: #E6F2E0; border-radius: 3px; }
+.xf-sug .b { font-size: 11px; color: var(--muted); }
+.xf-recents { display: flex; gap: 14px; overflow-x: auto; scrollbar-width: none; padding: 2px 0; }
+.xf-recents::-webkit-scrollbar { display: none; }
+.xf-recent { display: grid; justify-items: center; gap: 5px; width: 62px; flex: 0 0 auto; font-size: 11.5px; text-align: center; }
+.xf-recent .av { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 650; font-size: 14px; }
+.xf-recent small { color: var(--muted); font-size: 10.5px; display: block; }
+.xf-tip { font-size: 12.5px; color: var(--muted); text-align: center; line-height: 1.45; text-wrap: balance; }
+
+.xf-pad { display: grid; grid-template-columns: repeat(3, 1fr); padding: 2px 18px 0; }
+.xf-pad button { height: 52px; font-size: 26px; font-weight: 500; border-radius: 14px; display: grid; place-items: center; font-variant-numeric: tabular-nums; }
+.xf-pad button:active { background: #F2F3F1; }
+.xf-pad .sm { font-size: 13px; font-weight: 600; display: flex; gap: 6px; align-items: center; justify-content: center; color: var(--g-ink); }
+.xf-foot { padding: 8px 16px 30px; }
+.xf-cta { width: 100%; height: 52px; border-radius: 26px; background: #111412; color: #fff; font-size: 16px; font-weight: 600; transition: opacity .2s; }
+.xf-cta:disabled { background: #C9CDC8; color: #fff; cursor: default; }
+
+/* bank picker */
+.picker { position: absolute; inset: 0; z-index: 25; background: rgba(10,16,12,.38); opacity: 0; pointer-events: none; transition: opacity .25s; }
+.picker.open { opacity: 1; pointer-events: auto; }
+.picker .pk { position: absolute; left: 0; right: 0; bottom: 0; max-height: 80%; background: #fff; border-radius: 26px 26px 0 0; padding: 10px 16px 28px; display: flex; flex-direction: column; transform: translateY(100%); transition: transform .4s cubic-bezier(.2,.9,.25,1); }
+.picker.open .pk { transform: none; }
+.pk-h { display: flex; justify-content: space-between; align-items: center; padding: 6px 2px 10px; }
+.pk-h b { font-size: 17px; }
+.pk input { width: 100%; height: 42px; border-radius: 12px; border: 1px solid var(--line); background: #F5F7F4; padding: 0 12px; font: 400 15px var(--font); margin-bottom: 8px; }
+.pk-list { overflow-y: auto; }
+.pk-row { display: grid; grid-template-columns: 36px 1fr auto; gap: 10px; align-items: center; padding: 9px 2px; width: 100%; text-align: left; border-bottom: 1px solid var(--line); }
+.pk-row .blogo { width: 36px; height: 36px; border-radius: 10px; font-size: 11px; }
+.pk-row small { color: var(--muted); font-size: 12px; display: block; }
+.pk-row .pp { font-size: 11px; font-weight: 650; color: var(--g-ink); }
+
+/* amount */
+.xa-to { display: flex; align-items: center; gap: 8px; justify-content: center; font-size: 15px; font-weight: 600; }
+.xa-to .av { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 11px; font-weight: 650; }
+.xa-sub { text-align: center; font-size: 12px; color: var(--muted); margin-top: -8px; }
+.xa-amt { text-align: center; font-size: 52px; font-weight: 650; letter-spacing: -0.04em; margin-top: 18px; font-variant-numeric: tabular-nums; }
+.xa-amt.zero { color: #C4C8C3; }
+.xa-meta { display: grid; gap: 8px; margin-top: 6px; }
+.xa-pill { justify-self: center; display: inline-flex; gap: 8px; align-items: center; padding: 8px 12px; border-radius: 20px; background: #F2F3F1; font-size: 13px; font-weight: 600; }
+.xa-pill small { color: var(--muted); font-weight: 500; }
+.xa-rail { text-align: center; font-size: 12.5px; color: var(--muted); }
+.xa-rail b { color: var(--g-ink); font-weight: 650; }
+.xa-err { text-align: center; font-size: 12.5px; color: #B4620B; min-height: 18px; }
+.xa-quick { display: flex; gap: 8px; justify-content: center; }
+.xa-quick button { padding: 7px 12px; border-radius: 14px; border: 1px solid var(--line); font-size: 13px; font-weight: 600; }
+
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 @media (max-width: 760px) {
   body { padding: 0; }
   .stage { display: block; padding: 0; }
@@ -373,6 +490,37 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mint); outl
             <button class="spark-btn" id="sparkBtn" aria-label="Open Co-op AI"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5c.5 4.6 2.9 7 7.5 7.5-4.6.5-7 2.9-7.5 7.5-.5-4.6-2.9-7-7.5-7.5 4.6-.5 7-2.9 7.5-7.5Z"/><path d="M19 15c.2 1.8 1.2 2.8 3 3-1.8.2-2.8 1.2-3 3-.2-1.8-1.2-2.8-3-3 1.8-.2 2.8-1.2 3-3Z" opacity=".7"/></svg></button>
           </nav>
 
+          <section class="xfer" id="xfer" aria-label="Bank transfer" inert>
+            <div class="xf-head"><button class="xf-back" id="xfBack" aria-label="Back"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><div class="xf-title">Bank transfer</div><span></span></div>
+            <div class="xf-body" id="xfBody">
+              <div class="xf-field">
+                <span class="xf-label" id="xfLabel">Account number or phone</span>
+                <div class="xf-num empty" id="xfNum" aria-live="off"><span class="caret"></span>Enter account number</div>
+                <div class="xf-meter" id="xfMeter" aria-hidden="true"></div>
+                <div class="xf-meter-lbl" id="xfMeterLbl"></div>
+              </div>
+              <div id="xfDetect"></div>
+              <div id="xfResult"></div>
+              <div id="xfMore"></div>
+              <p class="sr-only" id="xfLive" aria-live="polite"></p>
+            </div>
+            <div class="xf-pad" id="xfPad"></div>
+            <div class="xf-foot"><button class="xf-cta" id="xfCta" disabled>Continue</button></div>
+            <div class="picker" id="picker"><div class="pk" role="dialog" aria-modal="true" aria-label="Choose bank"><div class="pk-h"><b>Choose bank</b><button class="x" id="pkX" aria-label="Close"><svg width="12" height="12" viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m2 2 8 8M10 2l-8 8"/></svg></button></div><input id="pkQ" type="search" placeholder="Search banks" aria-label="Search banks"><div class="pk-list" id="pkList"></div></div></div>
+          </section>
+          <section class="xamt" id="xamt" aria-label="Amount" inert>
+            <div class="xf-head"><button class="xf-back" id="xaBack" aria-label="Back"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><div class="xf-title">Amount</div><span></span></div>
+            <div class="xf-body">
+              <div class="xa-to" id="xaTo"></div>
+              <div class="xa-sub" id="xaSub"></div>
+              <div class="xa-amt zero" id="xaAmt">Ksh 0</div>
+              <div class="xa-err" id="xaErr"></div>
+              <div class="xa-meta"><button class="xa-pill" id="xaFrom"></button><div class="xa-rail" id="xaRail"></div></div>
+              <div class="xa-quick" id="xaQuick"></div>
+            </div>
+            <div class="xf-pad" id="xaPad"></div>
+            <div class="xf-foot"><button class="xf-cta" id="xaCta" disabled>Review</button></div>
+          </section>
           <div class="sheet-wrap" id="sheetWrap">
             <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
               <div class="grab"></div>
@@ -414,6 +562,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mint); outl
   </div>
 </div>
 
+<script src="bankid.js"></script>
 <script>
 (() => {
 "use strict";
@@ -456,7 +605,7 @@ const PEOPLE = [
   { id: "amani", name: "Amani Kiprono", initials: "AK", color: "#7A4CC2", tag: "@amani.k" },
   { id: "lisa", name: "Lisa Mwende", initials: "LM", color: "#C2551F", phone: "0723542388" },
   { id: "brian", name: "Brian Otieno", initials: "BO", color: "#0F7C8C", bank: "CIB Kenya", acct: "0030512788410" },
-  { id: "kevin", name: "Kevin Odhiambo", initials: "KO", color: "#9B1E5A", bank: "Equity Bank", acct: "1180291746532" },
+  { id: "kevin", name: "Kevin Odhiambo", initials: "KO", color: "#9B1E5A", bank: "Equity Bank", acct: "0170291746532" },
 ];
 const BANKS = [
   ["Equity Bank", /\bequity\b/], ["KCB Bank", /\bkcb\b/], ["NCBA Bank", /\bncba\b/], ["Stanbic Bank", /\bstanbic\b/], ["Absa Bank", /\babsa|barclays\b/],
@@ -483,6 +632,7 @@ const TX0 = () => ([
   { t: "Chacha's Gents", d: [19, "11:30"], a: -800, c: "Personal care", i: "CG", col: "#4B5563" },
 ]);
 let accounts = ACCOUNTS();
+let lastPaidAt = 0;
 let txs = TX0();
 const acct = (id) => accounts.find(a => a.id === id);
 
@@ -534,7 +684,7 @@ function go(target, opts = {}) {
 let drag = null, justDragged = false;
 screen.addEventListener("pointerdown", (e) => {
   if (e.button !== 0) return;
-  if (e.target.closest("input, .hold, [data-hscroll], .sheet-wrap.open, .mentions")) return;
+  if (e.target.closest("input, .hold, [data-hscroll], .sheet-wrap.open, .mentions, .xfer.open, .xamt.open")) return;
   drag = { x: e.clientX, y: e.clientY, t: performance.now(), id: e.pointerId, active: false, w: screen.clientWidth, hist: [] };
 });
 screen.addEventListener("pointermove", (e) => {
@@ -821,7 +971,7 @@ function recipientView(it) {
 function buildCard(intent, opts = {}) {
   const it = { ...intent }; it.from = defaultFrom(it);
   const card = el("div", "pcard");
-  let editing = false, nameState = (it.kind === "send" && (it.via === "coop" || it.via === "bank" || it.via === "mobile")) ? "checking" : "ok";
+  let editing = false, nameState = (!it.verified && it.kind === "send" && (it.via === "coop" || it.via === "bank" || it.via === "mobile")) ? "checking" : "ok";
   const render = () => {
     const q = quote(it); const r = recipientView(it); const from = acct(it.from);
     const verb = { send: "Hold to send", save: "Hold to save", withdraw: "Hold to withdraw", pay: "Hold to pay" }[q.cta];
@@ -868,7 +1018,7 @@ function buildCard(intent, opts = {}) {
     if (it2.kind === "pay_till") cat = "Shopping";
     const amtSigned = it2.kind === "withdraw_mmf" ? 0 : -q.total;
     if (it2.kind !== "withdraw_mmf") txs.unshift({ t: label, d: [26, nowTime()], a: amtSigned, c: cat, i: inital, col });
-    renderApp(flash, it2.kind !== "withdraw_mmf");
+    renderApp(flash, it2.kind !== "withdraw_mmf"); lastPaidAt = Date.now();
     const token = it2.kind === "pay_bill" ? Array.from({ length: 5 }, () => String(Math.floor(1000 + Math.random() * 9000))).join(" ") : null;
     const done = { send: "Sent", save: "Saved", withdraw: "On its way", pay: "Paid" }[q.cta];
     card.innerHTML = `<div class="rc">
@@ -928,7 +1078,7 @@ function openSheet(intent) {
   body.appendChild(buildCard(intent, { inSheet: true }));
   setTimeout(() => $("#sheetWrap").classList.add("open"), 300);
 }
-function closeSheet() { $("#sheetWrap").classList.remove("open"); }
+function closeSheet() { $("#sheetWrap").classList.remove("open"); if (lastPaidAt > X.openedAt && $("#xfer").classList.contains("open")) setTimeout(closeXfer, 250); }
 $("#sheetX").onclick = closeSheet;
 $("#sheetWrap").addEventListener("click", (e) => { if (e.target.id === "sheetWrap") closeSheet(); });
 
@@ -1133,6 +1283,350 @@ function drawSugs() {
   for (const s of SUGS.concat([{ cmd: "Send 3,500 to Brian's account 0030512788410 at CIB" }, { cmd: "Send 2,000 to Brian's account 011045238903" }])) { const b = el("button", "try"); b.textContent = s.cmd; b.onclick = () => submit(s.cmd); tries.appendChild(b); }
 }
 
+/* ---------- Bank transfer: account number first, bank worked out ---------- */
+const BID = window.BankID;
+// Sample directory standing in for Pesalink account validation (name enquiry).
+const DIRECTORY = [
+  { acct: "0180441723905", bank: "equity", name: "Grace Wanjiku" },
+  { acct: "0170291746532", bank: "equity", name: "Kevin Odhiambo", saved: true, color: "#9B1E5A", paid: 4 },
+  { acct: "0170291746523", bank: "equity", name: "Kelvin Otieno" },
+  { acct: "1123457890", bank: "kcb", name: "Peter Kiprop" },
+  { acct: "1187654321", bank: "kcb", name: "Mary Achieng", saved: true, color: "#C2551F", paid: 2 },
+  { acct: "1145678902", bank: "gtb", name: "Tom Barasa" },
+  { acct: "2045678901", bank: "absa", name: "Daniel Mwangi" },
+  { acct: "7134567890", bank: "ncba", name: "Faith Njeri" },
+  { acct: "0102345678901", bank: "stanchart", name: "Samuel Kariuki" },
+  { acct: "0100004567891", bank: "stanbic", name: "Esther Atieno" },
+  { acct: "00100234567891", bank: "im", name: "Rahul Shah" },
+  { acct: "0004567801", bank: "dtb", name: "Aisha Mohamed" },
+  { acct: "068000123456", bank: "family", name: "John Mutiso" },
+  { acct: "01001234567800", bank: "nbk", name: "Joseph Wekesa" },
+  { acct: "0030512788410", bank: "cib", name: "Brian Otieno", saved: true, color: "#0F7C8C", paid: 3 },
+  { acct: "01109876543200", bank: "coop", name: "Lilian Chebet" },
+  { acct: "011045238903", bank: "coop", name: "Victor Mutua", saved: true, color: "#2563C9", paid: 6 },
+  { acct: "01129087654300", bank: "coop", name: "Amara Wanjiru", saved: true, color: "#2E8B3A", paid: 5 },
+];
+const PHONES = {
+  "0723542388": { name: "Lisa Mwende", banks: ["coop", "equity"], mpesa: true, color: "#C2551F" },
+  "0712345678": { name: "James Kamau", banks: ["kcb"], mpesa: true, color: "#7A4CC2" },
+};
+const SAVED = DIRECTORY.filter(e => e.saved).sort((a, b) => b.paid - a.paid);
+const NAMES = ["Wanjiru Kamau", "Otieno Ouma", "Achieng Akinyi", "Kipchoge Rotich", "Mutua Musyoka", "Njeri Gathoni", "Barasa Wafula", "Chebet Jeptoo", "Omondi Okoth", "Nyambura Wairimu", "Kiprono Langat", "Atieno Adhiambo"];
+const hash = (s) => { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
+const initialsOf = (n) => n.split(/\s+/).map(w => w[0]).slice(0, 2).join("").toUpperCase();
+const colorOf = (n) => ["#2563C9", "#0F7C8C", "#7A4CC2", "#C2551F", "#2E8B3A", "#9B1E5A", "#4B5563"][hash(n) % 7];
+
+// Simulated Pesalink account check against one bank.
+async function validate(d, bankId, signal) {
+  await wait(480 + (hash(d + bankId) % 260));
+  if (signal.aborted) throw new Error("stale");
+  const hit = DIRECTORY.find(e => e.acct === d);
+  if (hit) return hit.bank === bankId ? { ok: true, name: hit.name, entry: hit } : { ok: false };
+  const b = BID.byId[bankId];
+  const sc = BID.infer(d).all.find(r => r.bank.id === bankId);
+  const nearKnown = BID.nearMiss(d, DIRECTORY);
+  if (sc && sc.complete && sc.match && sc.match.fit >= 1 && sc.match.L >= 4 && !nearKnown && b) return { ok: true, name: NAMES[hash(d) % NAMES.length] };
+  return { ok: false };
+}
+
+const X = { d: "", inf: null, state: "idle", res: null, forced: null, why: false, timer: 0, ctl: null, openedAt: 0, pasted: null };
+const xNum = $("#xfNum"), xMeter = $("#xfMeter"), xMeterLbl = $("#xfMeterLbl"), xDetect = $("#xfDetect"), xResult = $("#xfResult"), xMore = $("#xfMore"), xCta = $("#xfCta");
+const BLOGO = (b, size = 40) => `<span class="blogo" style="background:${b.color};width:${size}px;height:${size}px">${esc(b.init)}</span>`;
+const say = (t) => { $("#xfLive").textContent = t; };
+const ICON_OK = '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0Zm3.3 5.3a.8.8 0 0 0-1.1 0L7 8.6 5.8 7.3a.8.8 0 1 0-1.1 1.1l1.8 1.8a.8.8 0 0 0 1.1 0l3.7-3.8a.8.8 0 0 0 0-1.1Z"/></svg>';
+
+function drawPad(box, keys, onKey) {
+  box.innerHTML = "";
+  for (const k of keys) {
+    const b = el("button");
+    if (k === "paste") { b.className = "sm"; b.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="7" y="4" width="10" height="4" rx="1.5"/><path d="M7 6H5.5A1.5 1.5 0 0 0 4 7.5v12A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5v-12A1.5 1.5 0 0 0 18.5 6H17"/></svg>Paste'; b.setAttribute("aria-label", "Paste"); }
+    else if (k === "del") { b.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M9 5h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-7-7 7-7Zm3.3 3.9-1.4 1.4 1.7 1.7-1.7 1.7 1.4 1.4 1.7-1.7 1.7 1.7 1.4-1.4-1.7-1.7 1.7-1.7-1.4-1.4-1.7 1.7-1.7-1.7Z"/></svg>'; b.setAttribute("aria-label", "Delete"); }
+    else b.textContent = k;
+    b.onclick = () => onKey(k);
+    box.appendChild(b);
+  }
+}
+
+function openXfer(prefill) {
+  const xf = $("#xfer"); xf.inert = false; xf.classList.add("open"); X.openedAt = Date.now();
+  $("#appPane").querySelector(".tabbar").inert = true;
+  setDigits(prefill || "", { source: "reset" });
+}
+function closeXfer() {
+  X.ctl?.abort(); clearTimeout(X.timer);
+  for (const id of ["#xamt", "#xfer"]) { const s = $(id); s.classList.remove("open"); s.inert = true; }
+  $("#appPane").querySelector(".tabbar").inert = false;
+  closePicker();
+}
+$("#xfBack").onclick = closeXfer;
+
+function setDigits(d, opts = {}) {
+  d = BID.clean(d).slice(0, BID.MAX_LEN);
+  const changed = d !== X.d;
+  X.d = d;
+  if (changed || opts.source === "reset") { X.ctl?.abort(); X.res = null; X.state = "typing"; if (opts.source !== "paste") X.pasted = null; if (opts.keepForced !== true) X.forced = null; }
+  X.inf = BID.infer(d, { hint: X.pasted && X.pasted.hint });
+  render();
+  clearTimeout(X.timer);
+  if (!d) return;
+  if (readyToResolve()) X.timer = setTimeout(resolve, opts.source === "paste" ? 0 : 650);
+}
+function readyToResolve() {
+  const d = X.d; if (d.length < 8) return false;
+  if (DIRECTORY.some(e => e.acct === d)) return true;
+  if (X.forced) return BID.byId[X.forced].len.includes(d.length);
+  return X.inf.all.some(r => r.complete && r.p >= 0.12);
+}
+function key(k) {
+  if (k === "del") return setDigits(X.d.slice(0, -1));
+  if (k === "paste") return pasteFromClipboard();
+  if (X.d.length >= BID.MAX_LEN) { xNum.classList.remove("shake"); void xNum.offsetWidth; xNum.classList.add("shake"); return; }
+  setDigits(X.d + k);
+}
+drawPad($("#xfPad"), ["1", "2", "3", "4", "5", "6", "7", "8", "9", "paste", "0", "del"], key);
+
+async function pasteFromClipboard() {
+  try { const t = await navigator.clipboard.readText(); applyPaste(t); }
+  catch { toast("Press ⌘V or Ctrl+V to paste"); }
+}
+function applyPaste(text) {
+  const runs = String(text || "").match(/\d[\d\s-]{6,24}\d/g) || [];
+  const digits = runs.map(r => BID.clean(r)).filter(r => r.length >= 8 && r.length <= BID.MAX_LEN).sort((a, b) => b.length - a.length)[0];
+  if (!digits) { toast("No account number in what you pasted"); return; }
+  X.pasted = { hint: BID.hintFrom(text), text };
+  setDigits(digits, { source: "paste" });
+  toast(X.pasted.hint ? `Pasted · ${BID.byId[X.pasted.hint].short} mentioned in the text` : "Pasted account number");
+}
+document.addEventListener("paste", (e) => { if (!$("#xfer").classList.contains("open") || $("#xamt").classList.contains("open")) return; if (e.target.matches("input")) return; e.preventDefault(); applyPaste(e.clipboardData.getData("text")); });
+document.addEventListener("keydown", (e) => {
+  if (!$("#xfer").classList.contains("open") || e.target.matches("input") || e.metaKey || e.ctrlKey || e.altKey) return;
+  if ($("#picker").classList.contains("open")) return;
+  const amtOpen = $("#xamt").classList.contains("open");
+  if (/^\d$/.test(e.key)) { e.preventDefault(); amtOpen ? amtKey(e.key) : key(e.key); }
+  else if (e.key === "Backspace") { e.preventDefault(); amtOpen ? amtKey("del") : key("del"); }
+  else if (e.key === "Enter") { const b = amtOpen ? $("#xaCta") : xCta; if (!b.disabled) b.click(); }
+  else if (e.key === "Escape") { e.stopPropagation(); amtOpen ? closeAmt() : closeXfer(); }
+}, true);
+
+/* ----- Render ----- */
+function render() {
+  const d = X.d, inf = X.inf;
+  // number
+  xNum.classList.toggle("empty", !d);
+  xNum.innerHTML = d ? `${esc(BID.format(d))}<span class="caret"></span>` : `<span class="caret"></span>Enter account number`;
+  // meter: expected length of the leading guess
+  const lead = X.forced ? { bank: BID.byId[X.forced], expected: BID.byId[X.forced].len.find(l => l >= d.length) || d.length } : inf.top;
+  const exp = lead && d.length >= 3 ? Math.max(lead.expected, d.length) : 0;
+  xMeter.innerHTML = exp ? Array.from({ length: exp }, (_, i) => `<i class="${i < d.length ? "on" : ""}${i && i % 4 === 0 ? " gap" : ""}"></i>`).join("") : "";
+  const left = exp - d.length;
+  xMeterLbl.textContent = !exp ? "" : left > 0 ? `${left} more digit${left > 1 ? "s" : ""} for ${lead.bank.id === "phone" ? "a phone number" : "a " + lead.bank.short + " account"}` : `${d.length} digits`;
+  renderDetect(); renderResult(); renderMore();
+  xCta.disabled = X.state !== "resolved";
+}
+function confLabel(p) { return p >= 0.7 ? ["Likely", ""] : p >= 0.4 ? ["Possibly", "mid"] : ["Unsure", "low"]; }
+function renderDetect() {
+  const d = X.d, inf = X.inf;
+  if (X.state === "resolved" || X.state === "phone") { xDetect.innerHTML = ""; return; }
+  if (d.length < 3 && !X.forced) { xDetect.innerHTML = ""; return; }
+  if (X.forced) {
+    const b = BID.byId[X.forced];
+    xDetect.innerHTML = `<div class="xf-detect">${BLOGO(b)}<div><b>${esc(b.name)}</b><small>You chose this bank</small></div><span class="conf">Chosen</span></div>
+      <div class="xf-alts"><button data-x="picker">Change bank</button></div>`;
+    return;
+  }
+  const top = inf.top; if (!top) { xDetect.innerHTML = ""; return; }
+  if (top.bank.id === "phone") {
+    xDetect.innerHTML = `<div class="xf-detect"><span class="blogo" style="background:#2E8B3A">${IC.send}</span><div><b>Looks like a phone number</b><small>Pesalink finds their bank from the number</small></div><span class="conf">${Math.round(top.p * 100)}%</span></div>`;
+    return;
+  }
+  const [lbl, cls] = confLabel(top.p);
+  const isCoop = top.bank.id === "coop";
+  const sub = isCoop ? "Within Co-op · free and instant" : top.p >= 0.4 ? `${top.reasons[0]}` : "A few banks use this format";
+  const alts = inf.all.filter(r => r !== top && r.p >= 0.06).slice(0, 3);
+  xDetect.innerHTML = `<div class="xf-detect">${BLOGO(top.bank)}<div><b>${top.p >= 0.4 ? esc(top.bank.name) : "Could be " + esc(top.bank.short)}</b><small>${esc(sub)}</small></div><span class="conf ${cls}">${lbl} · ${Math.round(top.p * 100)}%</span></div>
+    <div class="xf-alts">${alts.length ? "Or " + alts.map(a => `<button data-pick="${a.bank.id}">${esc(a.bank.short)} ${Math.round(a.p * 100)}%</button>`).join("") : ""}<button data-x="picker">Other bank</button><button class="why" data-x="why">${X.why ? "Hide" : "Why?"}</button></div>
+    ${X.why ? whyPanel() : ""}`;
+}
+function whyPanel() {
+  const inf = X.inf, top = inf.top;
+  const bars = inf.all.slice(0, 4).map(r => `<div class="bar"><span>${esc(r.bank.short)}</span><span><i style="width:${Math.max(3, r.p * 100)}%"></i></span><span class="num">${Math.round(r.p * 100)}%</span></div>`).join("");
+  return `<div class="xf-why"><ul>${top.reasons.map(r => `<li>${esc(r)}</li>`).join("")}</ul>${bars}<span style="color:var(--muted)">Kenyan account numbers don't name their bank, so this is a guess from length and leading digits. The bank confirms the account name before you can continue.</span></div>`;
+}
+function recCard(r) {
+  const b = r.bank;
+  return `<div class="xf-rec"><div class="av" style="background:${r.color}">${esc(initialsOf(r.name))}<span class="bdg" style="background:${b.color}">${esc(b.init.slice(0, 3))}</span></div><div style="min-width:0"><b>${esc(r.name)} ${ICON_OK}</b><small>${esc(b.name)} · ${esc(BID.format(r.acct))}</small></div></div>`;
+}
+function renderResult() {
+  const r = X.res;
+  if (X.state === "checking") {
+    xResult.innerHTML = `<div class="xf-card"><div class="xf-steps">${X.steps.map(s => `<div class="${s.st}">${s.st === "wait" ? '<i class="spin" style="--c-track:#E3E7E2;--c-good:#1F7A2E"></i>' : s.st === "ok" ? ICON_OK : IC.warn}<span>${s.st === "wait" ? "Checking the name with " : s.st === "ok" ? "Found at " : "Not at "}${esc(s.bank.name)}${s.note ? " · " + esc(s.note) : ""}</span></div>`).join("")}</div></div>`;
+    return;
+  }
+  if (X.state === "resolved") {
+    const misses = (r.checked || []).filter(s => s.st === "x");
+    const viaLine = r.source === "saved" ? `Saved payee · paid ${r.entry.paid} times` : r.source === "internal" ? "Co-op customer · confirmed instantly" : `Name confirmed by ${r.bank.short} through Pesalink`;
+    xResult.innerHTML = `<div class="xf-card">${recCard(r)}<div class="xf-ok">${ICON_OK}${esc(viaLine)}</div>
+      ${misses.length ? `<div class="xf-tip" style="text-align:left">Not ${misses.map(m => esc(m.bank.short)).join(" or ")}. Found at ${esc(r.bank.short)} on the next check.</div>` : ""}
+      ${r.bank.id === "coop" ? `<div class="xf-tip" style="text-align:left;color:var(--g-ink)">They bank with Co-op, so this is free and instant.</div>` : ""}
+      ${r.near ? `<div class="xf-warn">${IC.warn}<span>This is one digit away from <b>${esc(r.near.entry.name)}</b>'s account you've paid ${r.near.entry.paid} times (${esc(r.near.slip)}). It belongs to someone else. Check before you continue.</span></div><div class="xf-actions"><button class="pri" data-use="${r.near.entry.acct}">Pay ${esc(r.near.entry.name.split(" ")[0])} instead</button><button data-x="keep">It's correct</button></div>` : ""}
+      ${r.firstTime && !r.near ? `<div class="xf-tip" style="text-align:left">First payment to this account. Make sure the name is who you expect.</div>` : ""}</div>`;
+    return;
+  }
+  if (X.state === "phone") {
+    const p = PHONES[X.d];
+    const name = p ? p.name : "This number";
+    const opts = (p ? p.banks : ["equity"]).map(id => { const b = BID.byId[id]; const free = id === "coop"; return `<button class="xf-opt" data-phonebank="${id}">${BLOGO(b, 36)}<span><b>${esc(b.short)} account</b><small>Linked to ${esc(BID.format(X.d))} on Pesalink</small></span><span class="fee">${free ? "Free" : "Pesalink"}</span></button>`; }).join("");
+    xResult.innerHTML = `<div class="xf-card"><div class="xf-rec"><div class="av" style="background:${p ? p.color : "#4B5563"}">${esc(p ? initialsOf(p.name) : "07")}</div><div><b>${esc(name)}</b><small>Phone ${esc(X.d.replace(/^(\d{4})(\d{3})(\d{3})$/, "$1 $2 $3"))}</small></div></div>
+      <div class="xf-sec">Send to one of their bank accounts</div>${opts}
+      <button class="xf-opt" data-x="mpesa"><span class="blogo" style="background:#2E8B3A;width:36px;height:36px">MP</span><span><b>M-Pesa instead</b><small>Goes to their mobile wallet</small></span><span class="fee">Ksh 15+</span></button></div>`;
+    return;
+  }
+  if (X.state === "typo") {
+    const nm = X.typo;
+    xResult.innerHTML = `<div class="xf-card"><div class="xf-warn">${IC.warn}<span>No account found${X.checkedNames ? " at " + esc(X.checkedNames) : ""}. It looks like a typo: ${esc(nm.slip)} compared with <b>${esc(nm.entry.name)}</b>'s account.</span></div>
+      <button class="xf-sug" data-use="${nm.entry.acct}"><span class="av" style="background:${nm.entry.color || colorOf(nm.entry.name)}">${esc(initialsOf(nm.entry.name))}</span><span><b>${esc(nm.entry.name)}</b><small>${esc(BID.byId[nm.entry.bank].short)} · ${esc(BID.format(nm.entry.acct))}</small></span><span class="b">Use</span></button></div>`;
+    return;
+  }
+  if (X.state === "notfound") {
+    xResult.innerHTML = `<div class="xf-card"><div class="xf-warn">${IC.warn}<span>No account ${esc(BID.format(X.d))} at ${esc(X.checkedNames || "the likely banks")}. Check the number, or choose the bank if you know it.</span></div><div class="xf-actions"><button class="pri" data-x="picker">Choose bank</button><button data-x="clear">Clear number</button></div></div>`;
+    return;
+  }
+  xResult.innerHTML = "";
+}
+function renderMore() {
+  const d = X.d;
+  if (X.state === "resolved" || X.state === "phone" || X.state === "checking") { xMore.innerHTML = ""; return; }
+  if (!d) {
+    xMore.innerHTML = `<div class="xf-sec">Recent</div><div class="xf-recents">${SAVED.map(e => `<button class="xf-recent" data-use="${e.acct}"><span class="av" style="background:${e.color}">${esc(initialsOf(e.name))}</span><span>${esc(e.name.split(" ")[0])}<small>${esc(BID.byId[e.bank].short)}</small></span></button>`).join("")}</div>
+      <p class="xf-tip">Type or paste an account number. We'll work out the bank and confirm the name, so there's no bank list to scroll.</p>`;
+    return;
+  }
+  const hits = d.length >= 2 ? SAVED.filter(e => e.acct.startsWith(d)).slice(0, 3) : [];
+  if (!hits.length) { xMore.innerHTML = ""; return; }
+  xMore.innerHTML = `<div class="xf-sec">Saved payees</div><div>${hits.map(e => `<button class="xf-sug" data-use="${e.acct}"><span class="av" style="background:${e.color}">${esc(initialsOf(e.name))}</span><span><b>${esc(e.name)}</b><small><em>${esc(BID.format(e.acct).slice(0, BID.format(d).length))}</em>${esc(BID.format(e.acct).slice(BID.format(d).length))}</small></span><span class="b">${esc(BID.byId[e.bank].short)}</span></button>`).join("")}</div>`;
+}
+
+/* ----- Resolve ----- */
+async function resolve() {
+  const d = X.d; X.ctl?.abort(); const ctl = new AbortController(); X.ctl = ctl;
+  const done = (res) => { if (ctl.signal.aborted) return; Object.assign(X, res); render(); };
+  const saved = SAVED.find(e => e.acct === d);
+  if (saved && !X.forced) {
+    const b = BID.byId[saved.bank];
+    done({ state: "resolved", res: { name: saved.name, acct: d, bank: b, color: saved.color, entry: saved, source: "saved" } });
+    say(`${saved.name}, ${b.name}. Saved payee.`); return;
+  }
+  const internal = DIRECTORY.find(e => e.acct === d && e.bank === "coop");
+  if (internal && (!X.forced || X.forced === "coop")) {
+    done({ state: "resolved", res: { name: internal.name, acct: d, bank: BID.byId.coop, color: colorOf(internal.name), source: "internal", firstTime: true } });
+    say(`${internal.name}, Co-operative Bank. Confirmed.`); return;
+  }
+  const inf = X.inf;
+  if (!X.forced && inf.top && inf.top.bank.id === "phone" && inf.top.complete) { done({ state: "phone" }); say("Phone number. Choose where to send."); return; }
+  let list = X.forced ? [BID.byId[X.forced]] : inf.candidates.filter(c => c.complete && c.p >= 0.02).slice(0, 4).map(c => c.bank);
+  if (!list.length) return;
+  X.steps = []; X.state = "checking";
+  for (const b of list) {
+    X.steps.push({ bank: b, st: "wait" }); render(); say(`Checking with ${b.name}`);
+    let r; try { r = await validate(d, b.id, ctl.signal); } catch { return; }
+    if (ctl.signal.aborted) return;
+    const step = X.steps[X.steps.length - 1];
+    if (r.ok) {
+      step.st = "ok";
+      const entry = r.entry;
+      const near = BID.nearMiss(d, SAVED);
+      done({ state: "resolved", res: { name: r.name, acct: d, bank: b, color: entry && entry.color || colorOf(r.name), source: "pesalink", checked: X.steps.slice(), near: near && near.entry.name !== r.name ? near : null, firstTime: !(entry && entry.saved) } });
+      say(`${r.name}, ${b.name}. Name confirmed.`); return;
+    }
+    step.st = "x";
+  }
+  const names = X.steps.map(s => s.bank.short).join(", ").replace(/, ([^,]*)$/, " or $1");
+  const nm = BID.nearMiss(d, DIRECTORY.filter(e => e.saved).concat(DIRECTORY.filter(e => !e.saved)));
+  if (nm) { done({ state: "typo", typo: nm, checkedNames: names }); say(`No account found. Did you mean ${nm.entry.name}?`); return; }
+  done({ state: "notfound", checkedNames: names }); say("No account found.");
+}
+
+/* ----- Clicks inside the transfer screen ----- */
+$("#xfer").addEventListener("click", (e) => {
+  const t = e.target.closest("[data-x],[data-pick],[data-use],[data-phonebank]"); if (!t) return;
+  if (t.dataset.pick) { X.forced = t.dataset.pick; setDigits(X.d, { keepForced: true, source: "paste" }); }
+  if (t.dataset.use) { X.forced = null; setDigits(t.dataset.use, { source: "paste" }); }
+  if (t.dataset.phonebank) {
+    const p = PHONES[X.d] || { name: "Account holder" }; const b = BID.byId[t.dataset.phonebank];
+    X.state = "resolved"; X.res = { name: p.name, acct: X.d, bank: b, color: p.color || colorOf(p.name), source: "pesalink", viaPhone: true, firstTime: true };
+    openAmt();
+  }
+  const x = t.dataset.x;
+  if (x === "why") { X.why = !X.why; render(); }
+  if (x === "picker") openPicker();
+  if (x === "clear") setDigits("");
+  if (x === "keep") { X.res.near = null; render(); }
+  if (x === "mpesa") { closeXfer(); go(1); setTimeout(() => submit(`Send to ${X.d}`), 380); }
+});
+
+/* ----- Bank picker: likely banks first ----- */
+function openPicker() {
+  const pk = $("#picker"); pk.classList.add("open"); $("#pkQ").value = ""; drawPicker(""); setTimeout(() => $("#pkQ").focus({ preventScroll: true }), 300);
+}
+function closePicker() { $("#picker").classList.remove("open"); }
+function drawPicker(q) {
+  const probs = Object.fromEntries((X.inf ? X.inf.candidates : []).map(c => [c.bank.id, c.p]));
+  const list = BID.BANKS.slice().filter(b => !q || (b.name + " " + b.short).toLowerCase().includes(q.toLowerCase()))
+    .sort((a, b) => (probs[b.id] || 0) - (probs[a.id] || 0) || a.name.localeCompare(b.name));
+  const box = $("#pkList"); box.innerHTML = "";
+  list.forEach((b, i) => {
+    const fits = X.d.length ? b.len.includes(X.d.length) : true;
+    const r = el("button", "pk-row", `${BLOGO(b, 36)}<span><b>${esc(b.name)}</b><small>${b.len.join(" or ")} digits${b.code ? " · code " + b.code : ""}${X.d.length && !fits ? " · doesn't match this number" : ""}</small></span><span class="pp">${probs[b.id] >= 0.05 ? Math.round(probs[b.id] * 100) + "%" : ""}</span>`);
+    if (X.d.length && !fits) r.style.opacity = .45;
+    r.onclick = () => { closePicker(); X.forced = b.id; setDigits(X.d, { keepForced: true, source: "paste" }); };
+    box.appendChild(r);
+  });
+}
+$("#pkQ").addEventListener("input", (e) => drawPicker(e.target.value));
+$("#pkX").onclick = closePicker;
+$("#picker").addEventListener("click", (e) => { if (e.target.id === "picker") closePicker(); });
+
+xCta.onclick = () => openAmt();
+
+/* ----- Amount ----- */
+const XA = { v: "", from: "current" };
+function openAmt() {
+  const r = X.res; const s = $("#xamt"); s.inert = false; s.classList.add("open");
+  XA.v = ""; XA.from = "current";
+  $("#xaTo").innerHTML = `<span class="av" style="background:${r.color}">${esc(initialsOf(r.name))}</span>${esc(r.name)}`;
+  $("#xaSub").textContent = `${r.bank.name} · ${BID.format(r.acct)}`;
+  drawAmt();
+}
+function closeAmt() { const s = $("#xamt"); s.classList.remove("open"); s.inert = true; }
+$("#xaBack").onclick = closeAmt;
+function amtIntent() {
+  const r = X.res; const coop = r.bank.id === "coop";
+  const person = { id: "x" + r.acct, name: r.name, initials: initialsOf(r.name), color: r.color, bank: r.bank.name, acct: r.acct, coop: coop ? r.acct : undefined };
+  return { kind: "send", person, via: coop ? "coop" : "bank", amount: Number(XA.v || 0), from: XA.from, verified: true };
+}
+function drawAmt() {
+  const v = Number(XA.v || 0);
+  $("#xaAmt").textContent = "Ksh " + v.toLocaleString("en-KE");
+  $("#xaAmt").classList.toggle("zero", !v);
+  const it = amtIntent(); const q = quote(it); const from = acct(XA.from);
+  $("#xaFrom").innerHTML = `From ${esc(from.short)} ··${from.mask} <small class="num">${fmt(from.bal)}</small>${IC.swap}`;
+  $("#xaRail").innerHTML = v ? `<b>${esc(q.method)}</b> · ${q.fee ? fmt(q.fee) + " fee" : "free"} · ${esc(q.eta.toLowerCase())}` : X.res.bank.id === "coop" ? "Within Co-op transfers are free" : "Pesalink · arrives instantly";
+  const err = !v ? "" : v < 10 ? "The smallest transfer is Ksh 10" : q.block ? q.block : "";
+  $("#xaErr").textContent = err;
+  $("#xaCta").disabled = !v || !!err;
+  $("#xaQuick").innerHTML = v ? "" : [1000, 2500, 5000, 10000].map(n => `<button data-q="${n}">${n.toLocaleString("en-KE")}</button>`).join("");
+}
+function amtKey(k) {
+  if (k === "del") XA.v = XA.v.slice(0, -1);
+  else if (k === "00") { if (XA.v) XA.v = (XA.v + "00").slice(0, 7); }
+  else if (!(XA.v === "" && k === "0")) XA.v = (XA.v + k).slice(0, 7);
+  drawAmt();
+}
+drawPad($("#xaPad"), ["1", "2", "3", "4", "5", "6", "7", "8", "9", "00", "0", "del"], amtKey);
+$("#xaQuick").addEventListener("click", (e) => { const b = e.target.closest("[data-q]"); if (b) { XA.v = b.dataset.q; drawAmt(); } });
+$("#xaFrom").onclick = () => { const ids = ["current", "savings", "salary"]; XA.from = ids[(ids.indexOf(XA.from) + 1) % ids.length]; drawAmt(); };
+$("#xaCta").onclick = () => openSheet(amtIntent());
+
 /* ---------- Boot ---------- */
 function reset() {
   accounts = ACCOUNTS(); txs = TX0(); pending = null; turns.length = 0;
@@ -1140,7 +1634,7 @@ function reset() {
   $("#welcome").hidden = false; renderApp();
 }
 $("#resetBtn").onclick = () => { reset(); toast("Demo reset"); };
-$("#sendBtn").onclick = () => { go(1); setTimeout(() => { prompt.value = "Send "; prompt.dispatchEvent(new Event("input")); }, 200); };
+$("#sendBtn").onclick = () => openXfer();
 $("#reqBtn").onclick = () => toast("Requests live in the app flows");
 const h = new Date().getHours(); $("#greet").textContent = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
 const tick = () => { $("#clock").textContent = new Date().toLocaleTimeString("en-KE", { hour: "numeric", minute: "2-digit", hour12: false }); };
