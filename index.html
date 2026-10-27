@@ -360,6 +360,17 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mint); outl
 .xf-recent small { color: var(--muted); font-size: 10.5px; display: block; }
 .xf-tip { font-size: 12.5px; color: var(--muted); text-align: center; line-height: 1.45; text-wrap: balance; }
 
+.xf-num .s { display: inline-block; transition: color .25s; }
+.xf-num .s.g { color: #D7DBD6; }
+.xf-num .sp { display: inline-block; width: .3em; }
+.xf-num .s.in { animation: digIn .28s cubic-bezier(.2,.9,.25,1.25); }
+@keyframes digIn { from { transform: translateY(50%) scale(.85); opacity: 0; filter: blur(4px); } }
+.xf-num .s.out { animation: digOut .15s ease forwards; }
+@keyframes digOut { to { transform: translateY(-40%) scale(.9); opacity: 0; filter: blur(3px); } }
+.xf-num .tick { display: none; margin-left: 8px; color: var(--g-ink); }
+.xf-num.locked .tick { display: inline-flex; animation: tickIn .35s cubic-bezier(.2,.9,.25,1.3); }
+@keyframes tickIn { from { transform: scale(.3) rotate(-30deg); opacity: 0; } }
+.xf-num.locked .caret { display: none; }
 .xf-text { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .xf-num.text { font-size: 26px; font-weight: 600; letter-spacing: -0.01em; }
 .xf-tools { display: flex; gap: 8px; justify-content: center; padding: 0 18px 6px; }
@@ -1504,20 +1515,56 @@ function renderText() {
   xCta.disabled = true; xCta.textContent = "Continue";
 }
 
+/* ----- The number: each digit arrives on its own, in the bank's shape ----- */
+const NUM = { key: "", slots: [], caret: null, tick: null, prevLen: 0 };
+function shapeFor(d) {
+  if (d.length < 3) return d.length;
+  const lead = X.forced ? BID.byId[X.forced] : (X.inf.top && X.inf.top.p >= 0.5 ? X.inf.top.bank : null);
+  if (!lead) return d.length;
+  return lead.len.find(l => l >= d.length) || d.length;
+}
+function bump(node, cls) { node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls); }
+function renderNumber(d) {
+  const total = Math.max(d.length, shapeFor(d));
+  const shaped = BID.format(d + "0".repeat(total - d.length));
+  const layout = shaped.replace(/\d/g, "0");
+  xNum.classList.toggle("locked", X.state === "resolved" && !X.editing);
+  if (!d) { NUM.key = ""; NUM.slots = []; NUM.prevLen = 0; xNum.style.fontSize = ""; xNum.classList.add("empty"); xNum.innerHTML = `<span class="caret"></span>Enter account number`; return; }
+  xNum.style.fontSize = (layout.length >= 18 ? 24 : layout.length >= 16 ? 27 : 32) + "px";
+  if (NUM.key !== layout || !NUM.slots.length || !xNum.contains(NUM.slots[0])) {
+    xNum.innerHTML = ""; NUM.slots = [];
+    for (const ch of layout) {
+      if (ch === " ") { xNum.appendChild(el("span", "sp")); continue; }
+      const sl = el("span", "s g"); sl.textContent = "0"; xNum.appendChild(sl); NUM.slots.push(sl);
+    }
+    NUM.caret = el("span", "caret"); NUM.tick = el("span", "tick", ICON_OK); xNum.appendChild(NUM.tick);
+    NUM.key = layout;
+    NUM.slots.forEach((sl, i) => { if (i < d.length) { sl.className = "s d"; sl.textContent = d[i]; } });
+    if (d.length > NUM.prevLen && NUM.slots[d.length - 1]) bump(NUM.slots[d.length - 1], "in");
+  } else {
+    NUM.slots.forEach((sl, i) => {
+      const want = i < d.length ? d[i] : null;
+      const isD = sl.classList.contains("d") && !sl.classList.contains("out");
+      if (want != null && (!isD || sl.textContent !== want)) { sl.className = "s d"; sl.textContent = want; bump(sl, "in"); }
+      else if (want == null && isD) { sl.className = "s d out"; setTimeout(() => { if (sl.classList.contains("out")) { sl.className = "s g"; sl.textContent = "0"; } }, reduce ? 0 : 150); }
+    });
+  }
+  const last = NUM.slots[d.length - 1]; if (last) last.after(NUM.caret);
+  NUM.prevLen = d.length;
+}
+
 /* ----- Render ----- */
 function render() {
   if (X.mode === "text") return renderText();
   xNum.className = "xf-num";
   const d = X.d, inf = X.inf;
   // number
-  xNum.classList.toggle("empty", !d && !(X.res && X.res.tag));
-  xNum.innerHTML = X.res && X.res.tag && !d ? esc(X.res.tag) : d ? `${esc(BID.format(d))}<span class="caret"></span>` : `<span class="caret"></span>Enter account number`;
-  // meter: expected length of the leading guess
-  const lead = X.forced ? { bank: BID.byId[X.forced], expected: BID.byId[X.forced].len.find(l => l >= d.length) || d.length } : inf.top;
-  const exp = lead && d.length >= 3 ? Math.max(lead.expected, d.length) : 0;
-  xMeter.innerHTML = exp ? Array.from({ length: exp }, (_, i) => `<i class="${i < d.length ? "on" : ""}${i && i % 4 === 0 ? " gap" : ""}"></i>`).join("") : "";
-  const left = exp - d.length;
-  xMeterLbl.textContent = !exp ? "" : left > 0 ? `${left} more digit${left > 1 ? "s" : ""} for ${lead.bank.id === "phone" ? "a phone number" : article(lead.bank.short) + " " + lead.bank.short + " account"}` : `${d.length} digits`;
+  if (X.res && X.res.tag && !d) { NUM.key = ""; NUM.slots = []; xNum.innerHTML = esc(X.res.tag); xNum.style.fontSize = ""; }
+  else renderNumber(d);
+  xMeter.innerHTML = "";
+  const ghosts = d.length >= 3 && shapeFor(d) > d.length;
+  xMeterLbl.textContent = ghosts || !d ? "" : d.length >= 3 && X.state === "typing" ? `${d.length} digits` : "";
+  if (ghosts) { const lead = X.forced ? BID.byId[X.forced] : X.inf.top.bank; const left = shapeFor(d) - d.length; $("#xfLive").dataset.left = left; }
   const settled = ["resolved", "phone", "typo", "notfound"].includes(X.state) && !X.editing;
   $("#xfPad").classList.toggle("collapsed", settled);
   $("#xfTools").classList.toggle("hide", settled || !!d);
