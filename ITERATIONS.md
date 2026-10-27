@@ -92,6 +92,24 @@ So the design is: **guess the bank from the shape of the number, then let the ba
 - Detection only helps if everyone can perceive it.
 - Back gestures are muscle memory, so breaking them makes the prototype feel fake.
 
+## Round 5: tested on small phones
+
+**Found**
+- On an iPhone SE (375×667) and in the desktop phone frame, the keypad pushed the scam warning's "I've checked" button below the fold.
+- The main button meanwhile read "Confirm the account first", pointing to a control the customer couldn't see.
+
+**Changed**
+- **Once the account is resolved, the keypad slides away**, since it has done its job.
+- **Tapping the number brings it back** ("Tap the number to edit"), and the cursor hides while the number is settled.
+- **Paste confirmations moved** above the main button instead of over the content.
+
+**Why**
+- A block the customer can't act on is worse than no block.
+- After resolution, the recipient is the only thing that matters on screen.
+
+**Improvement**
+- The resolved state now fits without scrolling on an iPhone SE: content height 469 px equals the visible height. Before, 411 px of content sat in 261 px of space.
+
 ## Honest limits
 
 - **The format table is a starting point** built from published numbers. Production needs a table maintained with IPSL and each bank, and must confirm every guess through Pesalink validation, as this flow does.

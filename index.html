@@ -278,7 +278,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mint); outl
 
 .toast { position: absolute; left: 50%; top: 62px; z-index: 55; transform: translate(-50%, -20px); opacity: 0; background: #121614; color: #fff; padding: 10px 14px; border-radius: 14px; font-size: 13px; font-weight: 550; box-shadow: 0 10px 30px -10px rgba(0,0,0,.5); transition: opacity .3s, transform .3s; pointer-events: none; white-space: nowrap; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
-.screen.in-xfer .toast { top: auto; bottom: 400px; }
+.screen.in-xfer .toast { top: auto; bottom: 96px; }
 
 /* ---------- Narrow screens: the phone is the page ---------- */
 /* ---------- Bank transfer (native flow) ---------- */
@@ -360,7 +360,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mint); outl
 .xf-recent small { color: var(--muted); font-size: 10.5px; display: block; }
 .xf-tip { font-size: 12.5px; color: var(--muted); text-align: center; line-height: 1.45; text-wrap: balance; }
 
-.xf-pad { display: grid; grid-template-columns: repeat(3, 1fr); padding: 2px 18px 0; }
+.xf-pad { display: grid; grid-template-columns: repeat(3, 1fr); padding: 2px 18px 0; max-height: 240px; overflow: hidden; transition: max-height .35s cubic-bezier(.2,.9,.25,1), opacity .25s; }
+.xf-pad.collapsed { max-height: 0; opacity: 0; pointer-events: none; }
+.xf-num.editable { cursor: pointer; }
+.xf-num.editable .caret { display: none; }
 .xf-pad button { height: 52px; font-size: 26px; font-weight: 500; border-radius: 14px; display: grid; place-items: center; font-variant-numeric: tabular-nums; }
 .xf-pad button:active { background: #F2F3F1; }
 .xf-pad .sm { font-size: 13px; font-weight: 600; display: flex; gap: 6px; align-items: center; justify-content: center; color: var(--g-ink); }
@@ -1386,7 +1389,7 @@ function setDigits(d, opts = {}) {
   d = BID.clean(d).slice(0, BID.MAX_LEN);
   const changed = d !== X.d;
   X.d = d;
-  if (changed || opts.source === "reset") { X.ctl?.abort(); X.res = null; X.state = "typing"; if (opts.source !== "paste") X.pasted = null; if (opts.keepForced !== true) X.forced = null; }
+  if (changed || opts.source === "reset") { X.ctl?.abort(); X.res = null; X.state = "typing"; X.editing = false; if (opts.source !== "paste") X.pasted = null; if (opts.keepForced !== true) X.forced = null; }
   X.inf = BID.infer(d, { hint: X.pasted && X.pasted.hint, learned: LEARNED });
   render();
   clearTimeout(X.timer);
@@ -1449,6 +1452,10 @@ function render() {
   xMeter.innerHTML = exp ? Array.from({ length: exp }, (_, i) => `<i class="${i < d.length ? "on" : ""}${i && i % 4 === 0 ? " gap" : ""}"></i>`).join("") : "";
   const left = exp - d.length;
   xMeterLbl.textContent = !exp ? "" : left > 0 ? `${left} more digit${left > 1 ? "s" : ""} for ${lead.bank.id === "phone" ? "a phone number" : article(lead.bank.short) + " " + lead.bank.short + " account"}` : `${d.length} digits`;
+  const settled = ["resolved", "phone", "typo", "notfound"].includes(X.state) && !X.editing;
+  $("#xfPad").classList.toggle("collapsed", settled);
+  xNum.classList.toggle("editable", settled);
+  if (settled) xMeterLbl.textContent = "Tap the number to edit";
   renderDetect(); renderResult(); renderMore();
   const blocked = !!(X.res && (X.res.near || X.res.mismatch));
   xCta.disabled = X.state !== "resolved" || blocked;
@@ -1542,6 +1549,8 @@ function renderMore() {
   if (!hits.length) { xMore.innerHTML = ""; return; }
   xMore.innerHTML = `<div class="xf-sec">Saved payees</div><div>${hits.map(e => `<button class="xf-sug" data-use="${e.acct}"><span class="av" style="background:${e.color}">${esc(initialsOf(e.name))}</span><span><b>${esc(e.name)}</b><small><em>${esc(BID.format(e.acct).slice(0, BID.format(d).length))}</em>${esc(BID.format(e.acct).slice(BID.format(d).length))}</small></span><span class="b">${esc(BID.byId[e.bank].short)}</span></button>`).join("")}</div>`;
 }
+
+xNum.addEventListener("click", () => { if (!xNum.classList.contains("editable")) return; X.editing = true; render(); });
 
 /* ----- Resolve ----- */
 async function resolve() {
