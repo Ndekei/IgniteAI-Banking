@@ -393,6 +393,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mint); outl
 .xa-rail { text-align: center; font-size: 12.5px; color: var(--muted); }
 .xa-rail b { color: var(--g-ink); font-weight: 650; }
 .xa-err { text-align: center; font-size: 12.5px; color: #B4620B; min-height: 18px; }
+.xa-err.ok { color: var(--g-ink); }
 .xa-quick { display: flex; gap: 8px; justify-content: center; }
 .xa-quick button { padding: 7px 12px; border-radius: 14px; border: 1px solid var(--line); font-size: 13px; font-weight: 600; }
 
@@ -795,17 +796,18 @@ function findRecipient(text, t, skip) {
   const acc = skip.find(s => s.kind === "acct");
   if (acc) {
     const d = acc.raw.replace(/\D/g, "");
-    const bank = findBank(t);
-    const isCoop = (/^01\d{10,12}$/.test(d) && (!bank || bank === "Co-operative Bank")) || bank === "Co-operative Bank";
-    if (isCoop) {
-      const p = PEOPLE.find(x => x.coop === d);
-      if (!p) return { error: `I couldn't find a Co-op account ending ${d.slice(-4)}. Check the number and try again.`, raw: acc.raw };
-      return { person: p, via: "coop", raw: acc.raw, claimed, acct: d };
+    const hint = BID.hintFrom(t);
+    const found = lookupSync(d, hint);
+    if (found) {
+      const known = PEOPLE.find(x => x.coop === d || x.acct === d);
+      const coop = found.bank.id === "coop";
+      const person = known || { id: "d" + d, name: found.name, initials: initialsOf(found.name), color: colorOf(found.name), bank: found.bank.name, acct: d, coop: coop ? d : undefined };
+      return { person, via: coop ? "coop" : "bank", raw: acc.raw, claimed, acct: d, detected: !hint };
     }
-    const p = PEOPLE.find(x => x.acct === d);
-    if (!bank && !p) return { need: "bank", acct: d, raw: acc.raw, claimed };
-    if (!p) return { error: `${bank} couldn't confirm who owns account ${group4(d)}. Check the number or pick a saved recipient.`, raw: acc.raw };
-    return { person: p, via: "bank", raw: acc.raw, claimed, acct: d };
+    const nm = BID.nearMiss(d, DIRECTORY);
+    if (nm) return { error: `No bank has an account ${group4(d)}. It looks like a typo: ${nm.slip} compared with ${nm.entry.name}'s ${BID.byId[nm.entry.bank].short} account ${group4(nm.entry.acct)}.`, chips: [`Send to ${nm.entry.name.split(" ")[0]}'s account ${nm.entry.acct}`], raw: acc.raw };
+    const tried = BID.infer(d, { hint }).candidates.filter(c => c.complete).slice(0, 3).map(c => c.bank.short).join(", ").replace(/, ([^,]*)$/, " or $1");
+    return { error: `I couldn't confirm account ${group4(d)}${tried ? " at " + tried : ""}. Check the number, or tell me which bank it's with.`, raw: acc.raw };
   }
   // by name: "to Victor", "kwa Lisa", "send Brian 2k"
   const nm = /\b(?:to|kwa|for|send|tuma|give|pay|transfer)\s+([a-z]+)\b/g; let m;
@@ -884,7 +886,7 @@ function understand(text) {
       if (!amt) return null;
       return { kind: "ask", need: "recipient", draft: { kind: "send", amount: amt.v, from: pickFrom(t) }, q: `Who should get ${fmt(amt.v)}?`, hl };
     }
-    const intent = { kind: "send", person: rec.person, via: rec.via, amount: amt && amt.v, claimed: rec.claimed, from: pickFrom(t) };
+    const intent = { kind: "send", person: rec.person, via: rec.via, amount: amt && amt.v, claimed: rec.claimed, from: pickFrom(t), detected: rec.detected };
     if (!amt) return { kind: "ask", need: "amount", draft: intent, q: `How much should I send ${rec.person.name.split(" ")[0]}?`, hl };
     return { kind: "pay", intent, hl };
   }
@@ -1125,7 +1127,8 @@ const lead = (it) => {
   const q = quote({ ...it, from: defaultFrom(it) });
   const first = it.person ? it.person.name.split(" ")[0] : "";
   if (it.kind === "send" && (it.via === "tag" || it.via === "coop")) return `Here's ${fmt(it.amount)} to ${first}. They bank with Co-op, so it's free and instant.`;
-  if (it.kind === "send" && it.via === "bank") return `Here's ${fmt(it.amount)} to ${first} at ${it.person.bank} by ${q.method}. I'll confirm the name with the bank first.`;
+  if (it.kind === "send" && it.via === "bank") return `Here's ${fmt(it.amount)} to ${first} at ${it.person.bank} by ${q.method}. ${it.detected ? "I worked out the bank from the account number, and " : ""}I'll confirm the name with the bank first.`;
+  if (it.kind === "send" && it.via === "coop" && it.detected) return `${first} banks with Co-op, so ${fmt(it.amount)} goes over free and instantly. I recognised the account number.`;
   if (it.kind === "send" && it.via === "mobile") return `Here's ${fmt(it.amount)} to ${first || "that number"} on M-Pesa.`;
   if (it.kind === "save_mmf") return `I'll sweep ${fmt(it.amount)} from ${acct(defaultFrom(it)).short} into your Money Market Fund. It earns interest daily once it lands.`;
   if (it.kind === "withdraw_mmf") return `I'll move ${fmt(it.amount)} from your Money Market Fund back to Current.`;
@@ -1311,12 +1314,26 @@ const PHONES = {
   "0723542388": { name: "Lisa Mwende", banks: ["coop", "equity"], mpesa: true, color: "#C2551F" },
   "0712345678": { name: "James Kamau", banks: ["kcb"], mpesa: true, color: "#7A4CC2" },
 };
+const SAMPLES = [
+  "Hi Victor, kindly send the rent here 🙏\nName: Grace Wanjiku\nBank: Equity\nA/C: 0180 4417 23905\nAmount: 18,500",
+  "URGENT: our account has changed, pay school fees to the new one.\nName: St. Mary's Academy\nKCB 1123457890\nAmount: 45,000",
+];
 const SAVED = DIRECTORY.filter(e => e.saved).sort((a, b) => b.paid - a.paid);
 const NAMES = ["Wanjiru Kamau", "Otieno Ouma", "Achieng Akinyi", "Kipchoge Rotich", "Mutua Musyoka", "Njeri Gathoni", "Barasa Wafula", "Chebet Jeptoo", "Omondi Okoth", "Nyambura Wairimu", "Kiprono Langat", "Atieno Adhiambo"];
 const hash = (s) => { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
 const initialsOf = (n) => n.split(/\s+/).map(w => w[0]).slice(0, 2).join("").toUpperCase();
 const colorOf = (n) => ["#2563C9", "#0F7C8C", "#7A4CC2", "#C2551F", "#2E8B3A", "#9B1E5A", "#4B5563"][hash(n) % 7];
 
+// Same rules as validate(), without the wait. Used by the chat to build a card.
+function lookupSync(d, hint) {
+  const hit = DIRECTORY.find(e => e.acct === d);
+  if (hit) return { name: hit.name, bank: BID.byId[hit.bank], entry: hit };
+  if (BID.nearMiss(d, DIRECTORY)) return null;
+  const inf = BID.infer(d, { hint, learned: LEARNED });
+  for (const c of inf.candidates.filter(c => c.complete).slice(0, 4))
+    if (c.match && c.match.fit >= 1 && c.match.L >= 4) return { name: NAMES[hash(d) % NAMES.length], bank: c.bank, generated: true };
+  return null;
+}
 // Simulated Pesalink account check against one bank.
 async function validate(d, bankId, signal) {
   await wait(480 + (hash(d + bankId) % 260));
@@ -1400,9 +1417,13 @@ function applyPaste(text) {
   const runs = String(text || "").match(/\d[\d\s-]{6,24}\d/g) || [];
   const digits = runs.map(r => BID.clean(r)).filter(r => r.length >= 8 && r.length <= BID.MAX_LEN).sort((a, b) => b.length - a.length)[0];
   if (!digits) { toast("No account number in what you pasted"); return; }
-  X.pasted = { hint: BID.hintFrom(text), text };
+  const nameM = /(?:a\/c name|account name|names?|jina)\s*[:\-–]\s*([A-Za-z][A-Za-z.'\-]*(?:[ ]+[A-Za-z][A-Za-z.'\-]*){0,3})/i.exec(text);
+  const amtM = /(?:amount|amt|kiasi|kshs?\.?|kes)\s*[:\-]?\s*(\d{1,3}(?:,\d{3})+|\d{1,7})(?:\.\d{1,2})?/i.exec(text);
+  const amount = amtM ? Number(amtM[1].replace(/,/g, "")) : null;
+  X.pasted = { hint: BID.hintFrom(text), text, name: nameM ? nameM[1].trim() : null, amount: amount && amount >= 10 ? amount : null };
   setDigits(digits, { source: "paste" });
-  toast(X.pasted.hint ? `Pasted · ${BID.byId[X.pasted.hint].short} mentioned in the text` : "Pasted account number");
+  const bits = [X.pasted.hint && BID.byId[X.pasted.hint].short, X.pasted.name && "name", X.pasted.amount && "amount"].filter(Boolean);
+  toast(bits.length ? `Pasted · found ${bits.join(", ")} in the message` : "Pasted account number");
 }
 document.addEventListener("paste", (e) => { if (!$("#xfer").classList.contains("open") || $("#xamt").classList.contains("open")) return; if (e.target.matches("input")) return; e.preventDefault(); applyPaste(e.clipboardData.getData("text")); });
 document.addEventListener("keydown", (e) => {
@@ -1428,8 +1449,9 @@ function render() {
   const left = exp - d.length;
   xMeterLbl.textContent = !exp ? "" : left > 0 ? `${left} more digit${left > 1 ? "s" : ""} for ${lead.bank.id === "phone" ? "a phone number" : article(lead.bank.short) + " " + lead.bank.short + " account"}` : `${d.length} digits`;
   renderDetect(); renderResult(); renderMore();
-  xCta.disabled = X.state !== "resolved" || !!(X.res && X.res.near);
-  xCta.textContent = X.res && X.res.near ? "Confirm the account first" : "Continue";
+  const blocked = !!(X.res && (X.res.near || X.res.mismatch));
+  xCta.disabled = X.state !== "resolved" || blocked;
+  xCta.textContent = blocked ? "Confirm the account first" : "Continue";
 }
 function confLabel(p) { return p >= 0.7 ? ["Likely", ""] : p >= 0.4 ? ["Possibly", "mid"] : ["Unsure", "low"]; }
 function renderDetect() {
@@ -1477,7 +1499,9 @@ function renderResult() {
       ${misses.length ? `<div class="xf-tip" style="text-align:left">Not ${misses.map(m => esc(m.bank.short)).join(" or ")}, so we checked the next likely bank. Numbers starting ${esc(r.acct.slice(0, 4))} will go to ${esc(r.bank.short)} first from now on.</div>` : ""}
       ${r.bank.id === "coop" ? `<div class="xf-tip" style="text-align:left;color:var(--g-ink)">They bank with Co-op, so this is free and instant.</div>` : ""}
       ${r.near ? `<div class="xf-warn">${IC.warn}<span>This is one digit away from <b>${esc(r.near.entry.name)}</b>'s account you've paid ${r.near.entry.paid} times (${esc(r.near.slip)}). It belongs to someone else. Check before you continue.</span></div><div class="xf-actions"><button class="pri" data-use="${r.near.entry.acct}">Pay ${esc(r.near.entry.name.split(" ")[0])} instead</button><button data-x="keep">It's correct</button></div>` : ""}
-      ${r.firstTime && !r.near ? `<div class="xf-tip" style="text-align:left">First payment to this account. Make sure the name is who you expect.</div>` : ""}</div>`;
+      ${r.nameMatch ? `<div class="xf-ok">${ICON_OK}Matches the name in the message (${esc(r.nameMatch)})</div>` : ""}
+      ${r.mismatch ? `<div class="xf-warn">${IC.warn}<span>The message says <b>${esc(r.mismatch)}</b>, but this account belongs to <b>${esc(r.name)}</b>. Scammers often send "updated" bank details. Check with the person on a call before paying.</span></div><div class="xf-actions"><button data-x="keepmm">I've checked, it's correct</button><button data-x="clear">Clear number</button></div>` : ""}
+      ${r.firstTime && !r.near && !r.mismatch && !r.nameMatch ? `<div class="xf-tip" style="text-align:left">First payment to this account. Make sure the name is who you expect.</div>` : ""}</div>`;
     return;
   }
   if (X.state === "phone") {
@@ -1506,7 +1530,8 @@ function renderMore() {
   if (X.state === "resolved" || X.state === "phone" || X.state === "checking") { xMore.innerHTML = ""; return; }
   if (!d) {
     xMore.innerHTML = `<div class="xf-sec">Recent</div><div class="xf-recents">${SAVED.map(e => `<button class="xf-recent" data-use="${e.acct}"><span class="av" style="background:${e.color}">${esc(initialsOf(e.name))}</span><span>${esc(e.name.split(" ")[0])}<small>${esc(BID.byId[e.bank].short)}</small></span></button>`).join("")}</div>
-      <p class="xf-tip">Type or paste an account number. We'll work out the bank and confirm the name, so there's no bank list to scroll.</p>`;
+      <p class="xf-tip">Type or paste an account number. We'll work out the bank and confirm the name, so there's no bank list to scroll.</p>
+      <div class="xf-alts" style="justify-content:center">Try pasting <button data-x="sample" data-n="0">a rent message</button><button data-x="sample" data-n="1">a suspicious one</button></div>`;
     return;
   }
   const hits = d.length >= 2 ? SAVED.filter(e => e.acct.startsWith(d)).slice(0, 3) : [];
@@ -1517,7 +1542,15 @@ function renderMore() {
 /* ----- Resolve ----- */
 async function resolve() {
   const d = X.d; X.ctl?.abort(); const ctl = new AbortController(); X.ctl = ctl;
-  const done = (res) => { if (ctl.signal.aborted) return; Object.assign(X, res); render(); };
+  const done = (res) => {
+    if (ctl.signal.aborted) return;
+    if (res.res && X.pasted && X.pasted.name) {
+      const words = (n) => n.toLowerCase().split(/[\s.'-]+/).filter(w => w.length > 1);
+      const a = words(X.pasted.name), b = words(res.res.name);
+      if (a.some(w => b.includes(w))) res.res.nameMatch = X.pasted.name; else res.res.mismatch = X.pasted.name;
+    }
+    Object.assign(X, res); render();
+  };
   const saved = SAVED.find(e => e.acct === d);
   if (saved && !X.forced) {
     const b = BID.byId[saved.bank];
@@ -1562,7 +1595,7 @@ async function resolve() {
 $("#xfer").addEventListener("click", (e) => {
   const t = e.target.closest("[data-x],[data-pick],[data-use],[data-phonebank]"); if (!t) return;
   if (t.dataset.pick) { X.forced = t.dataset.pick; setDigits(X.d, { keepForced: true, source: "paste" }); }
-  if (t.dataset.use) { X.forced = null; setDigits(t.dataset.use, { source: "paste" }); }
+  if (t.dataset.use) { X.forced = null; X.pasted = null; setDigits(t.dataset.use, { source: "paste" }); }
   if (t.dataset.phonebank) {
     const p = PHONES[X.d] || { name: "Account holder" }; const b = BID.byId[t.dataset.phonebank];
     X.state = "resolved"; X.res = { name: p.name, acct: X.d, bank: b, color: p.color || colorOf(p.name), source: "pesalink", viaPhone: true, firstTime: true };
@@ -1573,6 +1606,8 @@ $("#xfer").addEventListener("click", (e) => {
   if (x === "picker") openPicker();
   if (x === "clear") setDigits("");
   if (x === "keep") { X.res.near = null; render(); }
+  if (x === "keepmm") { X.res.mismatch = null; render(); }
+  if (x === "sample") applyPaste(SAMPLES[+t.dataset.n]);
   if (x === "mpesa") { closeXfer(); go(1); setTimeout(() => submit(`Send to ${X.d}`), 380); }
 });
 
@@ -1604,7 +1639,7 @@ xCta.onclick = () => openAmt();
 const XA = { v: "", from: "current" };
 function openAmt() {
   const r = X.res; const s = $("#xamt"); s.inert = false; s.classList.add("open");
-  XA.v = ""; XA.from = "current";
+  XA.v = X.pasted && X.pasted.amount ? String(X.pasted.amount) : ""; XA.fromMsg = !!XA.v; XA.from = "current";
   $("#xaTo").innerHTML = `<span class="av" style="background:${r.color}">${esc(initialsOf(r.name))}</span>${esc(r.name)}`;
   $("#xaSub").textContent = `${r.bank.name} · ${BID.format(r.acct)}`;
   drawAmt();
@@ -1624,7 +1659,8 @@ function drawAmt() {
   $("#xaFrom").innerHTML = `From ${esc(from.short)} ··${from.mask} <small class="num">${fmt(from.bal)}</small>${IC.swap}`;
   $("#xaRail").innerHTML = v ? `<b>${esc(q.method)}</b> · ${q.fee ? fmt(q.fee) + " fee" : "free"} · ${esc(q.eta.toLowerCase())}` : X.res.bank.id === "coop" ? "Within Co-op transfers are free" : "Pesalink · arrives instantly";
   const err = !v ? "" : v < 10 ? "The smallest transfer is Ksh 10" : q.block ? q.block : "";
-  $("#xaErr").textContent = err;
+  const note = !err && XA.fromMsg && String(v) === String(X.pasted && X.pasted.amount) ? "Amount from the message. Change it if you need to." : "";
+  $("#xaErr").textContent = err || note; $("#xaErr").classList.toggle("ok", !err && !!note);
   $("#xaCta").disabled = !v || !!err;
   $("#xaQuick").innerHTML = v ? "" : [1000, 2500, 5000, 10000].map(n => `<button data-q="${n}">${n.toLocaleString("en-KE")}</button>`).join("");
 }
