@@ -110,6 +110,38 @@ So the design is: **guess the bank from the shape of the number, then let the ba
 **Improvement**
 - The resolved state now fits without scrolling on an iPhone SE: content height 469 px equals the visible height. Before, 411 px of content sat in 261 px of space.
 
+## Round 6: range, not just depth
+
+Rounds 1 to 5 went deep on one idea: type the number and we work out the bank. Before going deeper, I stepped back and asked the question from Interface Craft's *Conceptual Range*: **why does the customer need to type an account number at all?**
+
+### Seven structurally different directions
+
+| # | Direction | What it answers | Strength | Weakness |
+|---|---|---|---|---|
+| 1 | Type the number (rounds 1–5) | "I have their number" | Works for anyone at any bank | Still 10 to 16 digits, typo risk |
+| 2 | Paste it (round 3) | "It's in a message" | 2 taps, carries name and amount | Only when there's a message |
+| 3 | Pick a person: phone or @tag | "I know them, not their number" | Free and instant inside Co-op | Tags only cover Co-op customers |
+| 4 | Search by name | "I've paid them before" | Zero digits | Can't search other banks by name (privacy) |
+| 5 | Scan it | "It's on paper or a screen" | Zero typing | Camera and OCR, lighting, trust |
+| 6 | Ask them for their details | "I don't have their details" | **They** type their own number: no typo, no forwarded scam | Needs them to respond |
+| 7 | Never ask | "I pay the same people" | Zero input | Only repeat payees |
+
+**Chosen:** a mix where **typing is the fallback, not the front door.**
+- One field accepts an account number, phone number, name or @tag. Repeat payees and recents appear before you type.
+- "Ask for their details" handles the rest by inverting the problem: the recipient types their own number.
+- Scanning is the next round's candidate.
+
+**Changed**
+- **The field takes anything.**
+  - **ABC** on the keypad (or just typing a letter on a computer) searches payees, contacts and Co-op @tags.
+  - Typing digits switches back to the number pad.
+  - Picking an @tag goes straight to a free Within Co-op transfer.
+- **Name search is deliberately limited** to your own payees, contacts and public @tags. It says why: other banks' customers can't be looked up by name, which keeps them private.
+- **Paste and "Ask for their details" sit above the keypad.** The ask sheet writes the message for you, then lets you share it (the phone's share sheet) or copy the link. When they reply, the account shows up with the name already confirmed ("Added by Grace through your link"). The demo has a "simulate" button.
+- **No-result searches lead somewhere:** "No one called… Ask for their details."
+
+**Why:** the safest account number is one the customer never typed. In direction 6, the person who owns the account enters it, which removes both typos and the scam where a forwarded message carries someone else's number.
+
 ## Honest limits
 
 - **The format table is a starting point** built from published numbers. Production needs a table maintained with IPSL and each bank, and must confirm every guess through Pesalink validation, as this flow does.

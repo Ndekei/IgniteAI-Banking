@@ -360,6 +360,14 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mint); outl
 .xf-recent small { color: var(--muted); font-size: 10.5px; display: block; }
 .xf-tip { font-size: 12.5px; color: var(--muted); text-align: center; line-height: 1.45; text-wrap: balance; }
 
+.xf-text { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.xf-num.text { font-size: 26px; font-weight: 600; letter-spacing: -0.01em; }
+.xf-tools { display: flex; gap: 8px; justify-content: center; padding: 0 18px 6px; }
+.xf-tools button { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 16px; background: #F2F3F1; font-size: 13px; font-weight: 600; color: var(--g-ink); }
+.xf-tools.hide { display: none; }
+.ask-msg { background: #E7F6DE; border-radius: 16px 16px 16px 4px; padding: 12px 14px; font-size: 14px; line-height: 1.45; color: #1A2A1D; }
+.ask-demo { margin-top: 14px; font-size: 12.5px; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+.xf-hint { font-size: 12px; color: var(--muted); line-height: 1.45; }
 .xf-pad { display: grid; grid-template-columns: repeat(3, 1fr); padding: 2px 18px 0; max-height: 240px; overflow: hidden; transition: max-height .35s cubic-bezier(.2,.9,.25,1), opacity .25s; }
 .xf-pad.collapsed { max-height: 0; opacity: 0; pointer-events: none; }
 .xf-num.editable { cursor: pointer; }
@@ -499,8 +507,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mint); outl
             <div class="xf-head"><button class="xf-back" id="xfBack" aria-label="Back"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><div class="xf-title">Bank transfer</div><span></span></div>
             <div class="xf-body" id="xfBody">
               <div class="xf-field">
-                <span class="xf-label" id="xfLabel">Account number or phone</span>
+                <span class="xf-label" id="xfLabel">Account number, phone, name or @tag</span>
                 <div class="xf-num empty" id="xfNum" aria-live="off"><span class="caret"></span>Enter account number</div>
+                <input class="xf-text" id="xfText" type="text" autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="search" aria-label="Search by name or @tag">
                 <div class="xf-meter" id="xfMeter" aria-hidden="true"></div>
                 <div class="xf-meter-lbl" id="xfMeterLbl"></div>
               </div>
@@ -509,9 +518,17 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--mint); outl
               <div id="xfMore"></div>
               <p class="sr-only" id="xfLive" aria-live="polite"></p>
             </div>
+            <div class="xf-tools" id="xfTools"><button data-x="paste"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="7" y="4" width="10" height="4" rx="1.5"/><path d="M7 6H5.5A1.5 1.5 0 0 0 4 7.5v12A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5v-12A1.5 1.5 0 0 0 18.5 6H17"/></svg>Paste</button><button data-x="ask"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>Ask for their details</button></div>
             <div class="xf-pad" id="xfPad"></div>
             <div class="xf-foot"><button class="xf-cta" id="xfCta" disabled>Continue</button></div>
             <div class="picker" id="picker"><div class="pk" role="dialog" aria-modal="true" aria-label="Choose bank"><div class="pk-h"><b>Choose bank</b><button class="x" id="pkX" aria-label="Close"><svg width="12" height="12" viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m2 2 8 8M10 2l-8 8"/></svg></button></div><input id="pkQ" type="search" placeholder="Search banks" aria-label="Search banks"><div class="pk-list" id="pkList"></div></div></div>
+            <div class="picker" id="askSheet"><div class="pk" role="dialog" aria-modal="true" aria-label="Ask for their details"><div class="pk-h"><b>Ask for their details</b><button class="x" data-x="askclose" aria-label="Close"><svg width="12" height="12" viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m2 2 8 8M10 2l-8 8"/></svg></button></div>
+              <p class="xf-tip" style="text-align:left;margin:0 0 12px">Skip typing their account number. Send a link and they add their own details, so there's nothing to mistype and nothing to copy from a forwarded message.</p>
+              <div class="ask-msg">Hi! I'd like to send you money. Add the account you want it in here: <b>ignite.co.ke/p/vn8k2q</b></div>
+              <div class="xf-actions" style="margin-top:12px"><button class="pri" data-x="share">Share link</button><button data-x="copylink">Copy link</button></div>
+              <p class="xf-tip" style="text-align:left;margin:12px 0 0">When they add an account, it shows up here with the name already confirmed. You still choose the amount and confirm.</p>
+              <button class="ask-demo" data-x="simreply">Demo: simulate Grace adding her details</button>
+            </div></div>
           </section>
           <section class="xamt" id="xamt" aria-label="Amount" inert>
             <div class="xf-head"><button class="xf-back" id="xaBack" aria-label="Back"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><div class="xf-title">Amount</div><span></span></div>
@@ -1364,7 +1381,8 @@ function drawPad(box, keys, onKey) {
   box.innerHTML = "";
   for (const k of keys) {
     const b = el("button");
-    if (k === "paste") { b.className = "sm"; b.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="7" y="4" width="10" height="4" rx="1.5"/><path d="M7 6H5.5A1.5 1.5 0 0 0 4 7.5v12A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5v-12A1.5 1.5 0 0 0 18.5 6H17"/></svg>Paste'; b.setAttribute("aria-label", "Paste"); }
+    if (k === "abc") { b.className = "sm"; b.innerHTML = "ABC"; b.setAttribute("aria-label", "Search by name or @tag"); }
+    else if (k === "paste") { b.className = "sm"; b.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="7" y="4" width="10" height="4" rx="1.5"/><path d="M7 6H5.5A1.5 1.5 0 0 0 4 7.5v12A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5v-12A1.5 1.5 0 0 0 18.5 6H17"/></svg>Paste'; b.setAttribute("aria-label", "Paste"); }
     else if (k === "del") { b.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M9 5h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-7-7 7-7Zm3.3 3.9-1.4 1.4 1.7 1.7-1.7 1.7 1.4 1.4 1.7-1.7 1.7 1.7 1.4-1.4-1.7-1.7 1.7-1.7-1.4-1.4-1.7 1.7-1.7-1.7Z"/></svg>'; b.setAttribute("aria-label", "Delete"); }
     else b.textContent = k;
     b.onclick = () => onKey(k);
@@ -1381,7 +1399,7 @@ function closeXfer() {
   X.ctl?.abort(); clearTimeout(X.timer);
   for (const id of ["#xamt", "#xfer"]) { const s = $(id); s.classList.remove("open"); s.inert = true; }
   $("#appPane").querySelector(".tabbar").inert = false; screen.classList.remove("in-xfer");
-  closePicker();
+  closePicker(); closeAsk(); xText.blur(); X.mode = "num";
 }
 $("#xfBack").onclick = closeXfer;
 
@@ -1389,7 +1407,7 @@ function setDigits(d, opts = {}) {
   d = BID.clean(d).slice(0, BID.MAX_LEN);
   const changed = d !== X.d;
   X.d = d;
-  if (changed || opts.source === "reset") { X.ctl?.abort(); X.res = null; X.state = "typing"; X.editing = false; if (opts.source !== "paste") X.pasted = null; if (opts.keepForced !== true) X.forced = null; }
+  if (changed || opts.source === "reset") { X.ctl?.abort(); X.res = null; X.state = "typing"; X.editing = false; if (opts.source !== "paste") { X.pasted = null; X.viaLink = null; } if (opts.keepForced !== true) X.forced = null; if (opts.source !== "keep-mode") X.mode = "num"; }
   X.inf = BID.infer(d, { hint: X.pasted && X.pasted.hint, learned: LEARNED });
   render();
   clearTimeout(X.timer);
@@ -1408,10 +1426,11 @@ function readyToResolve() {
 function key(k) {
   if (k === "del") return setDigits(X.d.slice(0, -1));
   if (k === "paste") return pasteFromClipboard();
+  if (k === "abc") return enterText("");
   if (X.d.length >= BID.MAX_LEN) { xNum.classList.remove("shake"); void xNum.offsetWidth; xNum.classList.add("shake"); return; }
   setDigits(X.d + k);
 }
-drawPad($("#xfPad"), ["1", "2", "3", "4", "5", "6", "7", "8", "9", "paste", "0", "del"], key);
+drawPad($("#xfPad"), ["1", "2", "3", "4", "5", "6", "7", "8", "9", "abc", "0", "del"], key);
 
 async function pasteFromClipboard() {
   try { const t = await navigator.clipboard.readText(); applyPaste(t); }
@@ -1432,20 +1451,67 @@ function applyPaste(text) {
 document.addEventListener("paste", (e) => { if (!$("#xfer").classList.contains("open") || $("#xamt").classList.contains("open")) return; if (e.target.matches("input")) return; e.preventDefault(); applyPaste(e.clipboardData.getData("text")); });
 document.addEventListener("keydown", (e) => {
   if (!$("#xfer").classList.contains("open") || e.target.matches("input") || e.metaKey || e.ctrlKey || e.altKey) return;
-  if ($("#picker").classList.contains("open")) return;
+  if ($("#picker").classList.contains("open") || $("#askSheet").classList.contains("open")) return;
   const amtOpen = $("#xamt").classList.contains("open");
   if (/^\d$/.test(e.key)) { e.preventDefault(); amtOpen ? amtKey(e.key) : key(e.key); }
   else if (e.key === "Backspace") { e.preventDefault(); amtOpen ? amtKey("del") : key("del"); }
   else if (e.key === "Enter") { const b = amtOpen ? $("#xaCta") : xCta; if (!b.disabled) b.click(); }
   else if (e.key === "Escape") { e.stopPropagation(); amtOpen ? closeAmt() : closeXfer(); }
+  else if (!amtOpen && /^[a-zA-Z@]$/.test(e.key)) { e.preventDefault(); enterText(e.key); }
 }, true);
+
+/* ----- One field for anyone: names, @tags and contacts ----- */
+const xText = $("#xfText");
+function enterText(seed) {
+  X.mode = "text"; X.q = seed || ""; X.state = "typing"; X.res = null; X.d = ""; X.inf = BID.infer("");
+  xText.value = X.q; xText.focus({ preventScroll: true }); render();
+}
+function exitText() { X.mode = "num"; X.q = ""; xText.blur(); render(); }
+xText.addEventListener("input", () => {
+  const v = xText.value;
+  if (/^\d[\d\s-]*$/.test(v)) { X.mode = "num"; xText.blur(); setDigits(v); return; }
+  X.q = v; render();
+});
+xText.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); exitText(); }
+  if (e.key === "Enter") { e.preventDefault(); const first = xMore.querySelector("[data-tagpick],[data-use]"); if (first) first.click(); }
+});
+function textResults(q) {
+  const ql = q.toLowerCase().replace(/^@/, "").trim();
+  const rows = [];
+  for (const p of PEOPLE.filter(p => p.tag)) if (!ql || p.tag.slice(1).startsWith(ql) || p.name.toLowerCase().split(" ").some(w => w.startsWith(ql))) rows.push({ k: "tag", p });
+  if (!q.startsWith("@")) {
+    for (const e of SAVED) if (!ql || e.name.toLowerCase().split(" ").some(w => w.startsWith(ql))) rows.push({ k: "saved", e });
+    for (const [ph, v] of Object.entries(PHONES)) if (!ql || v.name.toLowerCase().split(" ").some(w => w.startsWith(ql))) rows.push({ k: "phone", ph, v });
+  }
+  return rows.slice(0, 7);
+}
+function renderText() {
+  const q = X.q;
+  xNum.className = "xf-num text" + (q ? "" : " empty");
+  xNum.innerHTML = q ? `${esc(q)}<span class="caret"></span>` : `<span class="caret"></span>Name or @tag`;
+  xMeter.innerHTML = ""; xMeterLbl.innerHTML = `<button data-x="numpad" style="color:var(--g-ink);font-weight:600">Back to the number pad</button>`;
+  xDetect.innerHTML = ""; xResult.innerHTML = "";
+  const rows = textResults(q);
+  const row = (r) => r.k === "tag"
+    ? `<button class="xf-sug" data-tagpick="${esc(r.p.tag)}"><span class="av" style="background:${r.p.color}">${esc(r.p.initials)}</span><span><b>${esc(r.p.tag)}</b><small>${esc(r.p.name)}</small></span><span class="b" style="color:var(--g-ink);font-weight:650">Free</span></button>`
+    : r.k === "saved"
+    ? `<button class="xf-sug" data-use="${r.e.acct}"><span class="av" style="background:${r.e.color}">${esc(initialsOf(r.e.name))}</span><span><b>${esc(r.e.name)}</b><small>${esc(BID.byId[r.e.bank].short)} · ${esc(BID.format(r.e.acct))}</small></span><span class="b">Paid ${r.e.paid}×</span></button>`
+    : `<button class="xf-sug" data-use="${r.ph}"><span class="av" style="background:${r.v.color}">${esc(initialsOf(r.v.name))}</span><span><b>${esc(r.v.name)}</b><small>Contact · ${esc(BID.format(r.ph))}</small></span><span class="b">Phone</span></button>`;
+  const none = q.startsWith("@") ? `<p class="xf-hint">No Co-op tag ${esc(q)}. Tags only find Co-op customers who chose one.</p>` : `<p class="xf-hint">No one called "${esc(q)}" in your payees or contacts. For someone new, use their account number or ask them for their details.</p><div class="xf-actions"><button class="pri" data-x="ask">Ask for their details</button></div>`;
+  xMore.innerHTML = rows.length ? `<div class="xf-sec">${q ? "Matches" : "Tags, payees and contacts"}</div><div>${rows.map(row).join("")}</div><p class="xf-hint" style="margin-top:8px">Searches your payees, contacts and Co-op @tags. Other banks' customers can't be looked up by name, which keeps them private.</p>` : none;
+  $("#xfPad").classList.add("collapsed"); $("#xfTools").classList.add("hide");
+  xCta.disabled = true; xCta.textContent = "Continue";
+}
 
 /* ----- Render ----- */
 function render() {
+  if (X.mode === "text") return renderText();
+  xNum.className = "xf-num";
   const d = X.d, inf = X.inf;
   // number
-  xNum.classList.toggle("empty", !d);
-  xNum.innerHTML = d ? `${esc(BID.format(d))}<span class="caret"></span>` : `<span class="caret"></span>Enter account number`;
+  xNum.classList.toggle("empty", !d && !(X.res && X.res.tag));
+  xNum.innerHTML = X.res && X.res.tag && !d ? esc(X.res.tag) : d ? `${esc(BID.format(d))}<span class="caret"></span>` : `<span class="caret"></span>Enter account number`;
   // meter: expected length of the leading guess
   const lead = X.forced ? { bank: BID.byId[X.forced], expected: BID.byId[X.forced].len.find(l => l >= d.length) || d.length } : inf.top;
   const exp = lead && d.length >= 3 ? Math.max(lead.expected, d.length) : 0;
@@ -1454,6 +1520,7 @@ function render() {
   xMeterLbl.textContent = !exp ? "" : left > 0 ? `${left} more digit${left > 1 ? "s" : ""} for ${lead.bank.id === "phone" ? "a phone number" : article(lead.bank.short) + " " + lead.bank.short + " account"}` : `${d.length} digits`;
   const settled = ["resolved", "phone", "typo", "notfound"].includes(X.state) && !X.editing;
   $("#xfPad").classList.toggle("collapsed", settled);
+  $("#xfTools").classList.toggle("hide", settled || !!d);
   xNum.classList.toggle("editable", settled);
   if (settled) xMeterLbl.textContent = "Tap the number to edit";
   renderDetect(); renderResult(); renderMore();
@@ -1495,7 +1562,7 @@ function whyPanel() {
 }
 function recCard(r) {
   const b = r.bank;
-  return `<div class="xf-rec"><div class="av" style="background:${r.color}">${esc(initialsOf(r.name))}<span class="bdg" style="background:${b.color}">${esc(b.init.slice(0, 3))}</span></div><div style="min-width:0"><b>${esc(r.name)} ${ICON_OK}</b><small>${esc(b.name)} · ${esc(BID.format(r.acct))}</small></div></div>`;
+  return `<div class="xf-rec"><div class="av" style="background:${r.color}">${esc(initialsOf(r.name))}<span class="bdg" style="background:${b.color}">${esc(b.init.slice(0, 3))}</span></div><div style="min-width:0"><b>${esc(r.name)} ${ICON_OK}</b><small>${r.tag ? esc(r.tag) + " · Co-op tag" : esc(b.name) + " · " + esc(BID.format(r.acct))}</small></div></div>`;
 }
 function renderResult() {
   const r = X.res;
@@ -1505,7 +1572,7 @@ function renderResult() {
   }
   if (X.state === "resolved") {
     const misses = (r.checked || []).filter(s => s.st === "x");
-    const viaLine = r.source === "saved" ? `Saved payee · paid ${r.entry.paid} times` : r.source === "internal" ? "Co-op customer · confirmed instantly" : `Name confirmed by ${r.bank.short} through Pesalink`;
+    const viaLine = r.viaLink ? `Added by ${r.name.split(" ")[0]} through your link · confirmed by ${r.bank.short}` : r.source === "tag" ? "Co-op tag · free and instant" : r.source === "saved" ? `Saved payee · paid ${r.entry.paid} times` : r.source === "internal" ? "Co-op customer · confirmed instantly" : `Name confirmed by ${r.bank.short} through Pesalink`;
     xResult.innerHTML = `<div class="xf-card">${recCard(r)}<div class="xf-ok">${ICON_OK}${esc(viaLine)}</div>
       ${misses.length ? `<div class="xf-tip" style="text-align:left">Not ${misses.map(m => esc(m.bank.short)).join(" or ")}, so we checked the next likely bank. Numbers starting ${esc(r.acct.slice(0, 4))} will go to ${esc(r.bank.short)} first from now on.</div>` : ""}
       ${r.bank.id === "coop" ? `<div class="xf-tip" style="text-align:left;color:var(--g-ink)">They bank with Co-op, so this is free and instant.</div>` : ""}
@@ -1550,14 +1617,15 @@ function renderMore() {
   xMore.innerHTML = `<div class="xf-sec">Saved payees</div><div>${hits.map(e => `<button class="xf-sug" data-use="${e.acct}"><span class="av" style="background:${e.color}">${esc(initialsOf(e.name))}</span><span><b>${esc(e.name)}</b><small><em>${esc(BID.format(e.acct).slice(0, BID.format(d).length))}</em>${esc(BID.format(e.acct).slice(BID.format(d).length))}</small></span><span class="b">${esc(BID.byId[e.bank].short)}</span></button>`).join("")}</div>`;
 }
 
-xNum.addEventListener("click", () => { if (!xNum.classList.contains("editable")) return; X.editing = true; render(); });
+xNum.addEventListener("click", () => { if (!xNum.classList.contains("editable")) return; if (X.res && X.res.tag) return enterText(X.res.tag); X.editing = true; render(); });
 
 /* ----- Resolve ----- */
 async function resolve() {
   const d = X.d; X.ctl?.abort(); const ctl = new AbortController(); X.ctl = ctl;
   const done = (res) => {
     if (ctl.signal.aborted) return;
-    if (res.res && X.pasted && X.pasted.name) {
+    if (res.res && X.viaLink) res.res.viaLink = true;
+    if (res.res && X.pasted && X.pasted.name && !X.viaLink) {
       const words = (n) => n.toLowerCase().split(/[\s.'-]+/).filter(w => w.length > 1);
       const a = words(X.pasted.name), b = words(res.res.name);
       if (a.some(w => b.includes(w))) res.res.nameMatch = X.pasted.name; else res.res.mismatch = X.pasted.name;
@@ -1606,9 +1674,13 @@ async function resolve() {
 
 /* ----- Clicks inside the transfer screen ----- */
 $("#xfer").addEventListener("click", (e) => {
-  const t = e.target.closest("[data-x],[data-pick],[data-use],[data-phonebank]"); if (!t) return;
+  const t = e.target.closest("[data-x],[data-pick],[data-use],[data-phonebank],[data-tagpick]"); if (!t) return;
+  if (t.dataset.tagpick) {
+    const p = PEOPLE.find(x => x.tag === t.dataset.tagpick); X.mode = "num"; xText.blur(); X.d = ""; X.inf = BID.infer("");
+    X.state = "resolved"; X.res = { name: p.name, acct: p.coop || "", bank: BID.byId.coop, color: p.color, source: "tag", tag: p.tag }; render(); say(`${p.name}, Co-op tag ${p.tag}. Free.`); return;
+  }
   if (t.dataset.pick) { X.forced = t.dataset.pick; setDigits(X.d, { keepForced: true, source: "paste" }); }
-  if (t.dataset.use) { X.forced = null; X.pasted = null; setDigits(t.dataset.use, { source: "paste" }); }
+  if (t.dataset.use) { X.forced = null; X.pasted = null; X.viaLink = null; xText.blur(); setDigits(t.dataset.use, { source: "paste" }); }
   if (t.dataset.phonebank) {
     const p = PHONES[X.d] || { name: "Account holder" }; const b = BID.byId[t.dataset.phonebank];
     X.state = "resolved"; X.res = { name: p.name, acct: X.d, bank: b, color: p.color || colorOf(p.name), source: "pesalink", viaPhone: true, firstTime: true };
@@ -1621,6 +1693,9 @@ $("#xfer").addEventListener("click", (e) => {
   if (x === "keep") { X.res.near = null; render(); }
   if (x === "keepmm") { X.res.mismatch = null; render(); }
   if (x === "sample") applyPaste(SAMPLES[+t.dataset.n]);
+  if (x === "numpad") exitText();
+  if (x === "paste") pasteFromClipboard();
+  if (x === "ask") openAsk();
   if (x === "mpesa") { closeXfer(); go(1); setTimeout(() => submit(`Send to ${X.d}`), 380); }
 });
 
@@ -1632,6 +1707,21 @@ for (const [id, close] of [["#xfer", () => closeXfer()], ["#xamt", () => closeAm
   const end = (e) => { if (!sw) return; const dx = Math.max(0, e.clientX - sw.x); pane.style.transition = ""; pane.style.transform = ""; if (dx > sw.w * 0.33) close(); sw = null; };
   pane.addEventListener("pointerup", end); pane.addEventListener("pointercancel", end);
 }
+
+/* ----- Ask for their details (the recipient types their own number) ----- */
+const ASK_TEXT = "Hi! I'd like to send you money. Add the account you want it in here: https://ignite.co.ke/p/vn8k2q";
+function openAsk() { xText.blur(); $("#askSheet").classList.add("open"); }
+function closeAsk() { $("#askSheet").classList.remove("open"); }
+$("#askSheet").addEventListener("click", async (e) => {
+  if (e.target.id === "askSheet") return closeAsk();
+  const b = e.target.closest("[data-x]"); if (!b) return; e.stopPropagation();
+  const x = b.dataset.x;
+  if (x === "askclose") closeAsk();
+  if (x === "share") { try { if (navigator.share) { await navigator.share({ text: ASK_TEXT }); return; } } catch (err) { if (err && err.name === "AbortError") return; } x2copy(); }
+  if (x === "copylink") x2copy();
+  if (x === "simreply") { closeAsk(); X.mode = "num"; setTimeout(() => { X.pasted = { name: "Grace Wanjiku", hint: "equity" }; X.viaLink = "Grace Wanjiku"; setDigits("0180441723905", { source: "paste" }); toast("Grace added her Equity account"); }, 300); }
+});
+async function x2copy() { try { await navigator.clipboard.writeText(ASK_TEXT); toast("Link copied. Send it to them on WhatsApp or SMS"); } catch { toast("Couldn't copy here. The link is ignite.co.ke/p/vn8k2q"); } }
 
 /* ----- Bank picker: likely banks first ----- */
 function openPicker() {
@@ -1663,14 +1753,15 @@ function openAmt() {
   const r = X.res; const s = $("#xamt"); s.inert = false; s.classList.add("open");
   XA.v = X.pasted && X.pasted.amount ? String(X.pasted.amount) : ""; XA.fromMsg = !!XA.v; XA.from = "current";
   $("#xaTo").innerHTML = `<span class="av" style="background:${r.color}">${esc(initialsOf(r.name))}</span>${esc(r.name)}`;
-  $("#xaSub").textContent = `${r.bank.name} · ${BID.format(r.acct)}`;
+  $("#xaSub").textContent = r.tag ? `${r.tag} · Co-op tag` : `${r.bank.name} · ${BID.format(r.acct)}`;
   drawAmt();
 }
 function closeAmt() { const s = $("#xamt"); s.classList.remove("open"); s.inert = true; }
 $("#xaBack").onclick = closeAmt;
 function amtIntent() {
   const r = X.res; const coop = r.bank.id === "coop";
-  const person = { id: "x" + r.acct, name: r.name, initials: initialsOf(r.name), color: r.color, bank: r.bank.name, acct: r.acct, coop: coop ? r.acct : undefined };
+  const person = { id: "x" + (r.acct || r.tag), name: r.name, initials: initialsOf(r.name), color: r.color, bank: r.bank.name, acct: r.acct, coop: coop ? r.acct : undefined, tag: r.tag };
+  if (r.tag) return { kind: "send", person, via: "tag", amount: Number(XA.v || 0), from: XA.from, verified: true };
   return { kind: "send", person, via: coop ? "coop" : "bank", amount: Number(XA.v || 0), from: XA.from, verified: true };
 }
 function drawAmt() {
@@ -1695,7 +1786,7 @@ function amtKey(k) {
 drawPad($("#xaPad"), ["1", "2", "3", "4", "5", "6", "7", "8", "9", "00", "0", "del"], amtKey);
 $("#xaQuick").addEventListener("click", (e) => { const b = e.target.closest("[data-q]"); if (b) { XA.v = b.dataset.q; drawAmt(); } });
 $("#xaFrom").onclick = () => { const ids = ["current", "savings", "salary"]; XA.from = ids[(ids.indexOf(XA.from) + 1) % ids.length]; drawAmt(); };
-$("#xaCta").onclick = () => openSheet(amtIntent(), `Bank transfer · name confirmed by ${X.res.bank.short}`);
+$("#xaCta").onclick = () => openSheet(amtIntent(), X.res.tag ? "Co-op tag · free and instant" : `Bank transfer · name confirmed by ${X.res.bank.short}`);
 
 /* ---------- Boot ---------- */
 function reset() {
